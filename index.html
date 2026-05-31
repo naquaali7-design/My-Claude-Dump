@@ -13,7 +13,20 @@
       --text: #f1f5f9; --muted: #94a3b8;
     }
     body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-    .app { max-width: 480px; margin: 0 auto; padding: 1rem 1rem 5rem; }
+    .view { max-width: 480px; margin: 0 auto; padding: 1rem 1rem 5rem; }
+
+    /* ── Bottom Nav ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      background: var(--surface); border-top: 1px solid var(--border);
+      display: flex; z-index: 40;
+    }
+    .nav-btn { flex: 1; padding: 0.65rem 0.5rem; border: none; background: none; color: var(--muted); font-size: 0.75rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+    .nav-btn span { font-size: 1.25rem; }
+    .nav-btn.active { color: var(--blue); }
+
+    /* ── Common ── */
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-top: 0.5rem; }
     .header h1 { font-size: 1.3rem; font-weight: 700; }
     .header-btns { display: flex; gap: 0.5rem; }
@@ -39,7 +52,6 @@
     .btn-income    { background: var(--green); color: #fff; }
     .btn-loan-from { background: rgba(249,115,22,.18); color: var(--orange); border: 1px solid rgba(249,115,22,.3); }
     .btn-loan-to   { background: rgba(168,85,247,.18); color: var(--purple); border: 1px solid rgba(168,85,247,.3); }
-    .btn-import    { background: rgba(59,130,246,.18); color: var(--blue); border: 1px solid rgba(59,130,246,.3); grid-column: 1/-1; }
     .btn-ghost { background: var(--surface); color: var(--muted); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.85rem; cursor: pointer; }
     .filter-tabs { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.4rem; margin-bottom: 0.875rem; }
     .filter-tab { padding: 0.45rem 0.25rem; border-radius: 0.5rem; border: none; background: var(--surface); color: var(--muted); cursor: pointer; font-size: 0.78rem; font-weight: 500; }
@@ -63,20 +75,55 @@
     .tx-del:hover { color: var(--red); }
     .empty { text-align: center; color: var(--muted); padding: 3rem 1rem; font-size: 0.9rem; }
 
-    /* Overlays */
-    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 50; align-items: flex-end; justify-content: center; overflow-y: auto; }
+    /* ── Modals ── */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 50; align-items: flex-end; justify-content: center; }
     .overlay.open { display: flex; }
     .modal { background: var(--surface); border-radius: 1.25rem 1.25rem 0 0; padding: 1.5rem; width: 100%; max-width: 480px; }
     .modal-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 1.25rem; }
     .form-group { margin-bottom: 1rem; }
     label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    input[type=text], input[type=number], input[type=date], input[type=password], select {
+    input[type=text], input[type=number], input[type=date], select {
       width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
       border-radius: 0.5rem; padding: 0.7rem 0.85rem; font-size: 1rem; font-family: inherit;
     }
     input:focus, select:focus { outline: none; border-color: var(--blue); }
     .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.25rem; }
     .modal-cancel { background: var(--bg); color: var(--muted); border: 1px solid var(--border); border-radius: 0.75rem; padding: 0.8rem; font-size: 1rem; font-weight: 600; cursor: pointer; }
+
+    /* ── Insights ── */
+    .chart-card { background: var(--surface); border-radius: 1rem; padding: 1.1rem; margin-bottom: 0.75rem; }
+    .chart-card-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.85rem; }
+    .period-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+    .period-row select { flex: 1; }
+    .compare-toggle-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: var(--muted); cursor: pointer; }
+    .compare-toggle-row input { width: auto; cursor: pointer; }
+    .donuts-row { display: flex; gap: 0.75rem; }
+    .donut-col { flex: 1; min-width: 0; }
+    .donut-period-label { text-align: center; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.4rem; font-weight: 500; }
+    .insights-summary-compare { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; margin-bottom: 0; }
+    .isc-header { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 0.35rem 0.4rem; border-bottom: 1px solid var(--border); }
+    .isc-label { font-size: 0.82rem; font-weight: 600; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--border); }
+    .isc-val { font-size: 0.88rem; font-weight: 600; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--border); }
+
+    /* Category table */
+    .cat-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .cat-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.35rem 0.3rem; border-bottom: 1px solid var(--border); font-size: 0.7rem; text-transform: uppercase; }
+    .cat-table th:not(:first-child) { text-align: right; }
+    .cat-table td { padding: 0.5rem 0.3rem; border-bottom: 1px solid rgba(51,65,85,.4); vertical-align: middle; }
+    .cat-table td:not(:first-child) { text-align: right; }
+    .cat-table tr:last-child td { border-bottom: none; }
+    .cat-dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.4rem; flex-shrink: 0; }
+    .chg-up { color: var(--red); font-size: 0.8rem; }
+    .chg-dn { color: var(--green); font-size: 0.8rem; }
+    .chg-na { color: var(--muted); font-size: 0.8rem; }
+
+    /* Top 5 */
+    .top5-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.5rem 0; border-bottom: 1px solid rgba(51,65,85,.4); }
+    .top5-item:last-child { border-bottom: none; }
+    .top5-num { width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; color: var(--muted); }
+    .top5-info { flex: 1; min-width: 0; }
+    .top5-name { font-size: 0.88rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .top5-date { font-size: 0.75rem; color: var(--muted); }
 
     /* Import modal */
     .import-modal { max-height: 92vh; overflow-y: auto; padding-bottom: 2rem; }
@@ -87,28 +134,37 @@
     .tab-content.active { display: block; }
     .file-drop { border: 2px dashed var(--border); border-radius: 0.75rem; padding: 1.5rem; text-align: center; cursor: pointer; color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; position: relative; }
     .file-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .file-drop:hover { border-color: var(--blue); color: var(--text); }
-
-    /* Preview table */
+    .file-drop:hover { border-color: var(--blue); }
     .preview-wrap { margin-top: 1rem; }
     .preview-count { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; }
     .preview-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    .preview-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.04em; }
+    .preview-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 0.7rem; }
     .preview-table td { padding: 0.4rem 0.3rem; border-bottom: 1px solid rgba(51,65,85,.5); vertical-align: middle; }
     .preview-table select { padding: 0.25rem 0.4rem; font-size: 0.78rem; }
     .preview-table input[type=checkbox] { width: auto; cursor: pointer; }
-    .preview-table .amt-exp { color: var(--red); font-weight: 600; }
-    .preview-table .amt-inc { color: var(--green); font-weight: 600; }
+    .amt-exp { color: var(--red); font-weight: 600; }
+    .amt-inc { color: var(--green); font-weight: 600; }
     .status-bar { font-size: 0.82rem; color: var(--muted); margin-top: 0.75rem; min-height: 1.2em; }
     .status-bar.err { color: var(--red); }
     .btn-full { width: 100%; margin-top: 0.75rem; padding: 0.8rem; border: none; border-radius: 0.75rem; font-size: 1rem; font-weight: 600; cursor: pointer; background: var(--blue); color: #fff; }
-    .btn-full:disabled { opacity: 0.5; cursor: not-allowed; }
-    .spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 0.4rem; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Print / PDF ── */
+    @media print {
+      body { background: #fff; color: #0f172a; }
+      :root { --bg: #f1f5f9; --surface: #fff; --text: #0f172a; --muted: #475569; --border: #e2e8f0; --green: #16a34a; --red: #dc2626; }
+      .bottom-nav, .no-print, .overlay, #main-view, .header-btns { display: none !important; }
+      #insights-view { display: block !important; padding-bottom: 0; }
+      .chart-card { border: 1px solid #e2e8f0; break-inside: avoid; }
+      .view { padding: 0.5rem; }
+      select, input[type=checkbox] { display: none; }
+      .compare-toggle-row, .period-row { display: none; }
+    }
   </style>
 </head>
 <body>
-<div class="app">
+
+<!-- ── BUDGET VIEW ── -->
+<div id="main-view" class="view">
   <div class="header">
     <h1>💰 Budget</h1>
     <div class="header-btns">
@@ -123,14 +179,8 @@
   </div>
 
   <div class="stats">
-    <div class="stat">
-      <div class="stat-label" style="color:var(--green)">Income</div>
-      <div class="stat-value pos" id="income-display">$0.00</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label" style="color:var(--red)">Expenses</div>
-      <div class="stat-value neg" id="expenses-display">$0.00</div>
-    </div>
+    <div class="stat"><div class="stat-label" style="color:var(--green)">Income</div><div class="stat-value pos" id="income-display">$0.00</div></div>
+    <div class="stat"><div class="stat-label" style="color:var(--red)">Expenses</div><div class="stat-value neg" id="expenses-display">$0.00</div></div>
   </div>
 
   <div class="loans-summary" id="loans-summary">
@@ -157,9 +207,82 @@
   <div id="tx-list"></div>
 </div>
 
+<!-- ── INSIGHTS VIEW ── -->
+<div id="insights-view" class="view" style="display:none">
+  <div class="header">
+    <h1>📊 Insights</h1>
+    <button class="btn-ghost no-print" onclick="window.print()">Export PDF</button>
+  </div>
+
+  <!-- Period selector -->
+  <div class="chart-card no-print">
+    <div class="chart-card-title">Period</div>
+    <div class="period-row">
+      <select id="period-a" onchange="renderInsights()"></select>
+    </div>
+    <label class="compare-toggle-row">
+      <input type="checkbox" id="compare-toggle" onchange="toggleCompare()">
+      Compare with another period
+    </label>
+    <div id="compare-b-row" style="display:none">
+      <div class="period-row" style="margin-bottom:0">
+        <select id="period-b" onchange="renderInsights()"></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div id="insights-summary-wrap"></div>
+
+  <!-- Donut — spending by category -->
+  <div class="chart-card">
+    <div class="chart-card-title">Spending by Category</div>
+    <div class="donuts-row" id="donuts-row">
+      <div class="donut-col">
+        <div class="donut-period-label" id="donut-label-a"></div>
+        <canvas id="chart-donut-a"></canvas>
+      </div>
+      <div class="donut-col" id="donut-col-b" style="display:none">
+        <div class="donut-period-label" id="donut-label-b"></div>
+        <canvas id="chart-donut-b"></canvas>
+      </div>
+    </div>
+    <div id="donut-empty-a" class="empty" style="padding:1.5rem;display:none">No expenses this period</div>
+  </div>
+
+  <!-- Bar — income vs expenses -->
+  <div class="chart-card">
+    <div class="chart-card-title">Income vs Expenses</div>
+    <canvas id="chart-bar"></canvas>
+    <div id="bar-empty" class="empty" style="padding:1.5rem;display:none">No data this period</div>
+  </div>
+
+  <!-- Category breakdown table -->
+  <div class="chart-card">
+    <div class="chart-card-title">Category Breakdown</div>
+    <div id="cat-table-wrap"></div>
+  </div>
+
+  <!-- Top 5 expenses -->
+  <div class="chart-card">
+    <div class="chart-card-title">Top 5 Expenses</div>
+    <div id="top5-wrap"></div>
+  </div>
+</div>
+
+<!-- ── BOTTOM NAV ── -->
+<nav class="bottom-nav no-print">
+  <button class="nav-btn active" id="nav-budget" onclick="showView('main')">
+    <span>💰</span>Budget
+  </button>
+  <button class="nav-btn" id="nav-insights" onclick="showView('insights')">
+    <span>📊</span>Insights
+  </button>
+</nav>
+
 <!-- Add Transaction Modal -->
 <div class="overlay" id="overlay" onclick="overlayClick(event)">
-  <div class="modal" id="modal-box">
+  <div class="modal">
     <div class="modal-title" id="modal-title">Add Expense</div>
     <div class="form-group">
       <label>Amount</label>
@@ -190,48 +313,37 @@
 
 <!-- Import Modal -->
 <div class="overlay" id="import-overlay" onclick="importOverlayClick(event)">
-  <div class="modal import-modal" id="import-box">
+  <div class="modal import-modal">
     <div class="modal-title">⬆ Import Transactions</div>
-
     <div class="tab-bar">
-      <button class="tab-btn active" onclick="switchTab('csv',this)">📄 CSV File</button>
-      <button class="tab-btn" onclick="switchTab('image',this)">🖼 Screenshot / Image</button>
+      <button class="tab-btn active" onclick="switchImportTab('csv',this)">📄 CSV File</button>
+      <button class="tab-btn" onclick="switchImportTab('image',this)">🖼 Screenshot</button>
     </div>
 
-    <!-- CSV Tab -->
     <div class="tab-content active" id="tab-csv">
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Upload a bank statement CSV. Columns are auto-detected. Categories are guessed from the description.</p>
-      <div class="file-drop" id="csv-drop">
-        📄 Tap to choose a CSV file
-        <input type="file" accept=".csv,.txt" onchange="handleCSV(this)">
-      </div>
-      <div class="preview-wrap" id="csv-preview-wrap" style="display:none">
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Upload a bank statement CSV. Columns are auto-detected; categories are guessed from the description.</p>
+      <div class="file-drop" id="csv-drop">📄 Tap to choose a CSV file<input type="file" accept=".csv,.txt" onchange="handleCSV(this)"></div>
+      <div id="csv-preview-wrap" style="display:none">
         <div class="preview-count" id="csv-count"></div>
         <div style="overflow-x:auto">
-          <table class="preview-table" id="csv-table">
-            <thead><tr><th></th><th>Date</th><th>Description</th><th>Amount</th><th>Category</th></tr></thead>
-            <tbody id="csv-tbody"></tbody>
-          </table>
+          <table class="preview-table"><thead><tr><th></th><th>Date</th><th>Description</th><th>Amount</th><th>Category</th></tr></thead>
+          <tbody id="csv-tbody"></tbody></table>
         </div>
         <button class="btn-full" onclick="importCSV()">Import Selected</button>
       </div>
       <div class="status-bar" id="csv-status"></div>
     </div>
 
-    <!-- Image Tab -->
     <div class="tab-content" id="tab-image">
-      <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:.75rem;padding:1.1rem;margin-bottom:1rem">
-        <div style="font-weight:600;margin-bottom:.4rem">How to import from a screenshot</div>
-        <ol style="font-size:.875rem;color:var(--muted);line-height:1.8;padding-left:1.25rem">
+      <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:.75rem;padding:1.1rem">
+        <div style="font-weight:600;margin-bottom:.5rem">How to import from a screenshot</div>
+        <ol style="font-size:.875rem;color:var(--muted);line-height:1.9;padding-left:1.25rem">
           <li>Take a screenshot of your bank statement or receipt</li>
-          <li>Open your <strong style="color:var(--text)">Claude chat</strong> (claude.ai or this session)</li>
-          <li>Drop the image in the chat and say <em style="color:var(--text)">"Extract transactions as CSV"</em></li>
-          <li>Download the CSV Claude gives you</li>
-          <li>Come back here and use the <strong style="color:var(--text)">CSV tab</strong> to import it</li>
+          <li>Share it in this <strong style="color:var(--text)">Claude chat</strong></li>
+          <li>Say <em style="color:var(--text)">"Extract transactions as CSV"</em></li>
+          <li>Download the CSV and import it via the CSV tab</li>
         </ol>
-      </div>
-      <div style="font-size:.82rem;color:var(--muted);text-align:center;padding:.5rem 0">
-        This uses your existing Claude subscription — no extra API key needed.
+        <div style="margin-top:.75rem;font-size:.8rem;color:var(--muted)">Uses your existing Claude subscription — no API key needed.</div>
       </div>
     </div>
 
@@ -239,14 +351,14 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// ── Categories ────────────────────────────────────────────────────────────────
+// ── Data ──────────────────────────────────────────────────────────────────────
 const CATS = {
-  expense: ['Food & Dining','Groceries','Fuel','Transport','Clothes','Housing','Entertainment',
-            'Health','Bills & Utilities','Shopping','Education','Subscriptions','Other'],
+  expense: ['Food & Dining','Groceries','Fuel','Transport','Clothes','Housing',
+            'Entertainment','Health','Bills & Utilities','Shopping','Education','Subscriptions','Other'],
   income:  ['Salary','Freelance','Gift','Investment','Bonus','Other']
 };
-
 const ICONS = {
   'Food & Dining':'🍔','Groceries':'🛒','Fuel':'⛽','Transport':'🚗','Clothes':'👕',
   'Housing':'🏠','Entertainment':'🎬','Health':'💊','Bills & Utilities':'📄',
@@ -254,37 +366,39 @@ const ICONS = {
   'Salary':'💼','Freelance':'💻','Gift':'🎁','Investment':'📈','Bonus':'⭐',
   loan_from:'📥', loan_to:'📤'
 };
-
-// keyword → category for auto-classification
+const CAT_COLORS = {
+  'Food & Dining':'#f97316','Groceries':'#22c55e','Fuel':'#eab308','Transport':'#3b82f6',
+  'Clothes':'#a855f7','Housing':'#ef4444','Entertainment':'#ec4899','Health':'#06b6d4',
+  'Bills & Utilities':'#64748b','Shopping':'#f43f5e','Education':'#14b8a6',
+  'Subscriptions':'#8b5cf6','Other':'#94a3b8'
+};
 const KEYWORD_MAP = {
-  'Fuel':             ['fuel','gas station','petrol','shell','bp ','chevron','exxon','mobil','filling station','pump'],
-  'Food & Dining':    ['restaurant','cafe','coffee','mcdonald','kfc','subway','pizza','burger','starbucks','doordash','ubereats','grubhub','dining','bistro','grill','diner','eatery','takeaway','takeout','deliveroo','just eat'],
-  'Groceries':        ['supermarket','grocery','walmart','whole food','kroger','safeway','costco','aldi','lidl','tesco','sainsbury','asda','co-op','fresh market','greengrocer'],
-  'Transport':        ['uber','lyft','taxi','transit','bus fare','train','metro','parking','toll','fare','flight','airline','airfare','car rental'],
-  'Clothes':          ['zara','h&m','nike','adidas','clothing','fashion','apparel','shoes','gap','uniqlo','primark','forever 21','cloth','wear','dress shop','boutique','footwear'],
-  'Housing':          ['rent','mortgage','lease','property','landlord','hoa','home insurance'],
-  'Entertainment':    ['netflix','spotify','cinema','movie','theater','gaming','steam','playstation','xbox','hulu','disney+','prime video','concert','show','ticket'],
-  'Health':           ['pharmacy','hospital','doctor','medical','clinic','health','cvs','walgreens','dental','optician','gym','fitness','physio'],
-  'Bills & Utilities':['electric','water bill','internet','phone bill','utility','broadband','mobile plan','power bill','gas bill','council tax'],
-  'Shopping':         ['amazon','ebay','mall','ikea','target','best buy','online purchase','aliexpress'],
-  'Education':        ['school','university','course','tuition','college','training class','udemy','coursera'],
+  'Fuel':             ['fuel','gas station','petrol','shell','bp ','chevron','exxon','mobil','filling station'],
+  'Food & Dining':    ['restaurant','cafe','coffee','mcdonald','kfc','subway','pizza','burger','starbucks','doordash','ubereats','grubhub','dining','bistro','diner','takeaway','deliveroo'],
+  'Groceries':        ['supermarket','grocery','walmart','whole food','kroger','safeway','costco','aldi','lidl','tesco','sainsbury','asda','fresh market'],
+  'Transport':        ['uber','lyft','taxi','transit','bus fare','train','metro','parking','toll','flight','airline'],
+  'Clothes':          ['zara','h&m','nike','adidas','clothing','fashion','apparel','shoes','gap','uniqlo','primark'],
+  'Housing':          ['rent','mortgage','lease','property','landlord'],
+  'Entertainment':    ['netflix','spotify','cinema','movie','theater','gaming','steam','playstation','xbox','hulu','disney','concert'],
+  'Health':           ['pharmacy','hospital','doctor','medical','clinic','cvs','walgreens','dental','gym','fitness'],
+  'Bills & Utilities':['electric','water bill','internet','phone bill','utility','broadband','mobile plan','power bill'],
+  'Shopping':         ['amazon','ebay','mall','ikea','target','best buy','aliexpress'],
+  'Education':        ['school','university','course','tuition','college','udemy','coursera'],
   'Subscriptions':    ['subscription','membership','patreon','premium plan','annual plan'],
 };
 
 function guessCategory(desc) {
-  const d = (desc || '').toLowerCase();
-  for (const [cat, keys] of Object.entries(KEYWORD_MAP)) {
+  const d = (desc||'').toLowerCase();
+  for (const [cat, keys] of Object.entries(KEYWORD_MAP))
     if (keys.some(k => d.includes(k))) return cat;
-  }
   return 'Other';
 }
 
-// ── Storage ───────────────────────────────────────────────────────────────────
 function load() { return JSON.parse(localStorage.getItem('budget-tx') || '[]'); }
 function persist(txs) { localStorage.setItem('budget-tx', JSON.stringify(txs)); }
 function isLoan(t) { return t === 'loan_from' || t === 'loan_to'; }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Budget View ───────────────────────────────────────────────────────────────
 let currentFilter = 'all';
 
 function render() {
@@ -292,34 +406,27 @@ function render() {
   const income   = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const expenses = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   const bal = income - expenses;
-
   const balEl = document.getElementById('balance-display');
-  balEl.textContent = (bal < 0 ? '-' : '') + fmt(Math.abs(bal));
-  balEl.className = 'balance-amount ' + (bal >= 0 ? 'pos' : 'neg');
+  balEl.textContent = (bal<0?'-':'') + fmt(Math.abs(bal));
+  balEl.className = 'balance-amount ' + (bal>=0?'pos':'neg');
   document.getElementById('income-display').textContent   = fmt(income);
   document.getElementById('expenses-display').textContent = fmt(expenses);
-
   renderLoansSummary(txs);
 
-  const visible = currentFilter === 'loans'
-    ? txs.filter(t => isLoan(t.type))
-    : currentFilter === 'all' ? txs
-    : txs.filter(t => t.type === currentFilter);
-
-  visible.sort((a,b) => b.date.localeCompare(a.date));
+  const visible = currentFilter==='loans' ? txs.filter(t=>isLoan(t.type))
+    : currentFilter==='all' ? txs : txs.filter(t=>t.type===currentFilter);
+  visible.sort((a,b)=>b.date.localeCompare(a.date));
 
   const el = document.getElementById('tx-list');
-  if (!visible.length) { el.innerHTML = '<div class="empty">No transactions yet</div>'; return; }
+  if (!visible.length) { el.innerHTML='<div class="empty">No transactions yet</div>'; return; }
   el.innerHTML = visible.map(t => {
-    const loanTx = isLoan(t.type);
-    const label = loanTx
-      ? (t.type === 'loan_from' ? 'From ' : 'To ') + esc(t.person || '?')
-      : esc(t.category);
-    const sign = (t.type === 'expense' || t.type === 'loan_to') ? '−' : '+';
-    const badge = t.type === 'loan_from' ? `<span class="pill pill-orange">You owe</span>`
-                : t.type === 'loan_to'   ? `<span class="pill pill-purple">Owed to you</span>` : '';
+    const loan = isLoan(t.type);
+    const label = loan ? (t.type==='loan_from'?'From ':'To ')+esc(t.person||'?') : esc(t.category);
+    const sign  = (t.type==='expense'||t.type==='loan_to') ? '−' : '+';
+    const badge = t.type==='loan_from' ? `<span class="pill pill-orange">You owe</span>`
+                : t.type==='loan_to'   ? `<span class="pill pill-purple">Owed to you</span>` : '';
     return `<div class="transaction">
-      <div class="tx-icon ${t.type}">${loanTx ? ICONS[t.type] : (ICONS[t.category]||'📋')}</div>
+      <div class="tx-icon ${t.type}">${loan?ICONS[t.type]:(ICONS[t.category]||'📋')}</div>
       <div class="tx-info">
         <div class="tx-name">${label}${t.note?' · '+esc(t.note):''}${badge?' '+badge:''}</div>
         <div class="tx-date">${fmtDate(t.date)}</div>
@@ -331,260 +438,442 @@ function render() {
 }
 
 function renderLoansSummary(txs) {
-  const fromLoans = txs.filter(t=>t.type==='loan_from');
-  const toLoans   = txs.filter(t=>t.type==='loan_to');
-  const el = document.getElementById('loans-summary');
-  if (!fromLoans.length && !toLoans.length) { el.classList.remove('visible'); return; }
+  const from = txs.filter(t=>t.type==='loan_from');
+  const to   = txs.filter(t=>t.type==='loan_to');
+  const el   = document.getElementById('loans-summary');
+  if (!from.length && !to.length) { el.classList.remove('visible'); return; }
   el.classList.add('visible');
-  const group = arr => arr.reduce((m,t)=>{ const n=t.person||'Unknown'; m[n]=(m[n]||0)+t.amount; return m; },{});
-  document.getElementById('loans-from-rows').innerHTML = Object.entries(group(fromLoans)).map(([n,s])=>
+  const grp = arr => arr.reduce((m,t)=>{ const n=t.person||'Unknown'; m[n]=(m[n]||0)+t.amount; return m; },{});
+  document.getElementById('loans-from-rows').innerHTML = Object.entries(grp(from)).map(([n,s])=>
     `<div class="loans-summary-row"><span>📥 You owe <strong>${esc(n)}</strong></span><span style="color:var(--orange);font-weight:600">${fmt(s)}</span></div>`).join('');
-  document.getElementById('loans-to-rows').innerHTML = Object.entries(group(toLoans)).map(([n,s])=>
+  document.getElementById('loans-to-rows').innerHTML = Object.entries(grp(to)).map(([n,s])=>
     `<div class="loans-summary-row"><span>📤 <strong>${esc(n)}</strong> owes you</span><span style="color:var(--purple);font-weight:600">${fmt(s)}</span></div>`).join('');
 }
 
-// ── Transaction CRUD ──────────────────────────────────────────────────────────
 function del(id) {
   if (!confirm('Delete this transaction?')) return;
-  persist(load().filter(t=>t.id!==id));
-  render();
+  persist(load().filter(t=>t.id!==id)); render();
 }
 function clearAll() {
   if (!confirm('Delete ALL transactions?')) return;
-  localStorage.removeItem('budget-tx');
-  render();
+  localStorage.removeItem('budget-tx'); render();
+}
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active'); render();
 }
 
-// ── Add Transaction Modal ─────────────────────────────────────────────────────
+// ── Add Transaction Modal ──────────────────────────────────────────────────────
 let currentType = 'expense';
-
 function openModal(type) {
   currentType = type;
   const loan = isLoan(type);
-  const titles = { expense:'Add Expense', income:'Add Income', loan_from:'Borrowed Money (Loan From)', loan_to:'Lent Money (Loan To)' };
-  const btnCls = { expense:'btn btn-expense', income:'btn btn-income', loan_from:'btn btn-loan-from', loan_to:'btn btn-loan-to' };
+  const titles = {expense:'Add Expense',income:'Add Income',loan_from:'Borrowed Money',loan_to:'Lent Money'};
+  const cls    = {expense:'btn btn-expense',income:'btn btn-income',loan_from:'btn btn-loan-from',loan_to:'btn btn-loan-to'};
   document.getElementById('modal-title').textContent = titles[type];
-  document.getElementById('modal-submit').className  = btnCls[type];
-  document.getElementById('category-group').style.display = loan ? 'none' : '';
-  document.getElementById('person-group').style.display   = loan ? '' : 'none';
+  document.getElementById('modal-submit').className  = cls[type];
+  document.getElementById('category-group').style.display = loan?'none':'';
+  document.getElementById('person-group').style.display   = loan?'':'none';
   if (!loan) document.getElementById('tx-category').innerHTML = CATS[type].map(c=>`<option>${c}</option>`).join('');
-  document.getElementById('tx-amount').value = '';
-  document.getElementById('tx-person').value = '';
-  document.getElementById('tx-note').value   = '';
-  document.getElementById('tx-date').value   = today();
+  document.getElementById('tx-amount').value='';
+  document.getElementById('tx-person').value='';
+  document.getElementById('tx-note').value='';
+  document.getElementById('tx-date').value=today();
   document.getElementById('overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('tx-amount').focus(), 50);
+  setTimeout(()=>document.getElementById('tx-amount').focus(),50);
 }
 function closeModal() { document.getElementById('overlay').classList.remove('open'); }
-function overlayClick(e) { if (e.target===document.getElementById('overlay')) closeModal(); }
-
+function overlayClick(e) { if(e.target===document.getElementById('overlay')) closeModal(); }
 function save() {
   const amount = parseFloat(document.getElementById('tx-amount').value);
   const note   = document.getElementById('tx-note').value.trim();
   const date   = document.getElementById('tx-date').value;
-  if (!amount || amount <= 0) { alert('Enter a valid amount.'); return; }
+  if (!amount||amount<=0) { alert('Enter a valid amount.'); return; }
   if (!date) { alert('Pick a date.'); return; }
-  const tx = { id: uid(), type: currentType, amount, note, date };
+  const tx = { id:uid(), type:currentType, amount, note, date };
   if (isLoan(currentType)) {
     const person = document.getElementById('tx-person').value.trim();
     if (!person) { alert("Enter the person's name."); return; }
     tx.person = person;
-  } else {
-    tx.category = document.getElementById('tx-category').value;
-  }
+  } else { tx.category = document.getElementById('tx-category').value; }
   const txs = load(); txs.push(tx); persist(txs);
   closeModal(); render();
 }
 
-function setFilter(f, btn) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  render();
+// ── View switching ────────────────────────────────────────────────────────────
+function showView(view) {
+  document.getElementById('main-view').style.display     = view==='main'?'':'none';
+  document.getElementById('insights-view').style.display = view==='insights'?'':'none';
+  document.getElementById('nav-budget').classList.toggle('active',   view==='main');
+  document.getElementById('nav-insights').classList.toggle('active', view==='insights');
+  if (view==='insights') { populatePeriodDrops(); renderInsights(); }
+}
+
+// ── Insights — Period helpers ─────────────────────────────────────────────────
+function periodLabel(p) {
+  if (p==='thismonth') return 'This Month';
+  if (p==='lastmonth') return 'Last Month';
+  if (p==='3m') return 'Last 3 Months';
+  if (p==='6m') return 'Last 6 Months';
+  return new Date(p+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'});
+}
+
+function getTxsForPeriod(p) {
+  const txs = load().filter(t=>!isLoan(t.type));
+  const now  = new Date();
+  if (p==='thismonth') { const ym=now.toISOString().slice(0,7); return txs.filter(t=>t.date.startsWith(ym)); }
+  if (p==='lastmonth') { const d=new Date(now.getFullYear(),now.getMonth()-1,1); return txs.filter(t=>t.date.startsWith(d.toISOString().slice(0,7))); }
+  if (p==='3m') { const c=new Date(now.getFullYear(),now.getMonth()-2,1).toISOString().slice(0,10); return txs.filter(t=>t.date>=c); }
+  if (p==='6m') { const c=new Date(now.getFullYear(),now.getMonth()-5,1).toISOString().slice(0,10); return txs.filter(t=>t.date>=c); }
+  return txs.filter(t=>t.date.startsWith(p));
+}
+
+function populatePeriodDrops() {
+  const months = [...new Set(load().filter(t=>!isLoan(t.type)).map(t=>t.date.slice(0,7)))].sort().reverse();
+  const base = [
+    '<option value="thismonth">This Month</option>',
+    '<option value="lastmonth">Last Month</option>',
+    '<option value="3m">Last 3 Months</option>',
+    '<option value="6m">Last 6 Months</option>',
+  ];
+  const monthOpts = months.map(m=>`<option value="${m}">${new Date(m+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'})}</option>`);
+  const html = [...base, months.length?'<option disabled>──────────</option>':'',...monthOpts].join('');
+  document.getElementById('period-a').innerHTML = html;
+  const bHtml = ['<option value="lastmonth">Last Month</option>','<option value="thismonth">This Month</option>','<option value="3m">Last 3 Months</option>','<option value="6m">Last 6 Months</option>',months.length?'<option disabled>──────────</option>':'',...monthOpts].join('');
+  document.getElementById('period-b').innerHTML = bHtml;
+}
+
+function toggleCompare() {
+  const on = document.getElementById('compare-toggle').checked;
+  document.getElementById('compare-b-row').style.display = on?'':'none';
+  renderInsights();
+}
+
+// ── Insights — Chart instances ────────────────────────────────────────────────
+let cDonutA=null, cDonutB=null, cBar=null;
+function destroyCharts() {
+  [cDonutA,cDonutB,cBar].forEach(c=>c&&c.destroy());
+  cDonutA=cDonutB=cBar=null;
+}
+
+// ── Insights — Render ─────────────────────────────────────────────────────────
+function renderInsights() {
+  const pA = document.getElementById('period-a').value;
+  const comparing = document.getElementById('compare-toggle').checked;
+  const pB = comparing ? document.getElementById('period-b').value : null;
+  const txsA = getTxsForPeriod(pA);
+  const txsB = pB ? getTxsForPeriod(pB) : null;
+  destroyCharts();
+  renderInsightsSummary(txsA, txsB, pA, pB);
+  renderDonuts(txsA, txsB, pA, pB);
+  renderBar(txsA, txsB, pA, pB);
+  renderCatTable(txsA, txsB, pA, pB);
+  renderTop5(txsA);
+}
+
+function catTotals(txs) {
+  return txs.filter(t=>t.type==='expense').reduce((m,t)=>{ m[t.category]=(m[t.category]||0)+t.amount; return m; },{});
+}
+function catColor(cat) { return CAT_COLORS[cat]||'#94a3b8'; }
+const chartDefaults = { color:'#94a3b8', borderColor:'rgba(51,65,85,.6)' };
+
+function renderInsightsSummary(txsA, txsB, pA, pB) {
+  const sum = txs => ({
+    inc: txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0),
+    exp: txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0),
+  });
+  const a = sum(txsA);
+  const b = txsB ? sum(txsB) : null;
+
+  if (!b) {
+    const bal = a.inc - a.exp;
+    document.getElementById('insights-summary-wrap').innerHTML = `
+      <div class="stats" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="stat"><div class="stat-label" style="color:var(--green)">Income</div><div class="stat-value pos">${fmt(a.inc)}</div></div>
+        <div class="stat"><div class="stat-label" style="color:var(--red)">Expenses</div><div class="stat-value neg">${fmt(a.exp)}</div></div>
+        <div class="stat"><div class="stat-label">Net</div><div class="stat-value ${bal>=0?'pos':'neg'}">${(bal<0?'-':'')+fmt(Math.abs(bal))}</div></div>
+      </div>`;
+  } else {
+    const balA = a.inc-a.exp, balB = b.inc-b.exp;
+    document.getElementById('insights-summary-wrap').innerHTML = `
+      <div class="chart-card" style="padding:.75rem;margin-bottom:.75rem">
+        <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+          <tr>
+            <td style="padding:.3rem .4rem;color:var(--muted);font-size:.7rem;text-transform:uppercase"></td>
+            <td style="padding:.3rem .4rem;color:var(--muted);font-size:.7rem;text-transform:uppercase;text-align:right">Income</td>
+            <td style="padding:.3rem .4rem;color:var(--muted);font-size:.7rem;text-transform:uppercase;text-align:right">Expenses</td>
+            <td style="padding:.3rem .4rem;color:var(--muted);font-size:.7rem;text-transform:uppercase;text-align:right">Net</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:.45rem .4rem;font-weight:600">${periodLabel(pA)}</td>
+            <td style="padding:.45rem .4rem;text-align:right;color:var(--green);font-weight:600">${fmt(a.inc)}</td>
+            <td style="padding:.45rem .4rem;text-align:right;color:var(--red);font-weight:600">${fmt(a.exp)}</td>
+            <td style="padding:.45rem .4rem;text-align:right;font-weight:600;color:${balA>=0?'var(--green)':'var(--red)'}">${(balA<0?'-':'')+fmt(Math.abs(balA))}</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:.45rem .4rem;font-weight:600">${periodLabel(pB)}</td>
+            <td style="padding:.45rem .4rem;text-align:right;color:var(--green);font-weight:600">${fmt(b.inc)}</td>
+            <td style="padding:.45rem .4rem;text-align:right;color:var(--red);font-weight:600">${fmt(b.exp)}</td>
+            <td style="padding:.45rem .4rem;text-align:right;font-weight:600;color:${balB>=0?'var(--green)':'var(--red)'}">${(balB<0?'-':'')+fmt(Math.abs(balB))}</td>
+          </tr>
+        </table>
+      </div>`;
+  }
+}
+
+function renderDonuts(txsA, txsB, pA, pB) {
+  document.getElementById('donut-label-a').textContent = pB ? periodLabel(pA) : '';
+  document.getElementById('donut-col-b').style.display = pB ? '' : 'none';
+  document.getElementById('donut-label-b').textContent = pB ? periodLabel(pB) : '';
+
+  const makeDonut = (canvasId, txs) => {
+    const totals  = catTotals(txs);
+    const entries = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+    const canvas  = document.getElementById(canvasId);
+    if (!entries.length) { canvas.style.display='none'; return null; }
+    canvas.style.display='';
+    return new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: entries.map(([c])=>c),
+        datasets: [{ data: entries.map(([,v])=>v), backgroundColor: entries.map(([c])=>catColor(c)), borderWidth: 2, borderColor: '#1e293b' }]
+      },
+      options: {
+        plugins: {
+          legend: { position:'bottom', labels:{ color:'#94a3b8', font:{size:10}, padding:6, boxWidth:10, usePointStyle:true } },
+          tooltip: { callbacks: { label: ctx => {
+            const tot = ctx.dataset.data.reduce((a,b)=>a+b,0);
+            return ` ${ctx.label}: ${fmt(ctx.raw)} (${Math.round(ctx.raw/tot*100)}%)`;
+          }}}
+        },
+        cutout: '62%'
+      }
+    });
+  };
+
+  const empty = document.getElementById('donut-empty-a');
+  cDonutA = makeDonut('chart-donut-a', txsA);
+  if (!cDonutA) empty.style.display=''; else empty.style.display='none';
+  if (txsB) cDonutB = makeDonut('chart-donut-b', txsB);
+}
+
+function renderBar(txsA, txsB, pA, pB) {
+  const inc = txs => txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp = txs => txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const incA=inc(txsA), expA=exp(txsA);
+  const canvas = document.getElementById('chart-bar');
+  const emptyEl = document.getElementById('bar-empty');
+
+  if (!incA && !expA && !txsB) { canvas.style.display='none'; emptyEl.style.display=''; return; }
+  canvas.style.display=''; emptyEl.style.display='none';
+
+  let datasets;
+  if (txsB) {
+    const incB=inc(txsB), expB=exp(txsB);
+    datasets = [
+      { label: periodLabel(pA), data:[incA,expA], backgroundColor:['rgba(34,197,94,.85)','rgba(239,68,68,.85)'], borderRadius:6, borderSkipped:false },
+      { label: periodLabel(pB), data:[incB,expB], backgroundColor:['rgba(34,197,94,.35)','rgba(239,68,68,.35)'], borderRadius:6, borderSkipped:false }
+    ];
+  } else {
+    datasets = [{ data:[incA,expA], backgroundColor:['rgba(34,197,94,.85)','rgba(239,68,68,.85)'], borderRadius:6, borderSkipped:false }];
+  }
+
+  cBar = new Chart(canvas, {
+    type: 'bar',
+    data: { labels:['Income','Expenses'], datasets },
+    options: {
+      plugins: { legend:{ display:!!txsB, labels:{ color:'#94a3b8', font:{size:11} } } },
+      scales: {
+        x: { ticks:{color:'#94a3b8'}, grid:{color:'rgba(51,65,85,.4)'} },
+        y: { ticks:{color:'#94a3b8', callback:v=>'$'+v.toLocaleString()}, grid:{color:'rgba(51,65,85,.4)'} }
+      }
+    }
+  });
+}
+
+function renderCatTable(txsA, txsB, pA, pB) {
+  const totA = catTotals(txsA);
+  const totB = txsB ? catTotals(txsB) : null;
+  const allCats = [...new Set([...Object.keys(totA), ...(totB?Object.keys(totB):[])])].sort((a,b)=>(totA[b]||0)-(totA[a]||0));
+  const totalExpA = Object.values(totA).reduce((s,v)=>s+v,0);
+
+  if (!allCats.length) { document.getElementById('cat-table-wrap').innerHTML='<div class="empty" style="padding:1.5rem">No expenses this period</div>'; return; }
+
+  const colB = totB ? `<th>${periodLabel(pB)}</th><th>Change</th>` : '<th>% of total</th>';
+  let html = `<table class="cat-table"><thead><tr><th>Category</th><th>${periodLabel(pA)}</th>${colB}</tr></thead><tbody>`;
+
+  allCats.forEach(cat => {
+    const a = totA[cat]||0;
+    const b = totB ? (totB[cat]||0) : null;
+    let extra = '';
+    if (b !== null) {
+      if (!a && b>0)      extra = `<td style="color:var(--muted)">—</td><td class="chg-na">New</td>`;
+      else if (a>0 && !b) extra = `<td style="color:var(--muted)">—</td><td class="chg-na">Gone</td>`;
+      else {
+        const diff = a - b;
+        const pct  = b>0 ? Math.round(Math.abs(diff)/b*100) : 100;
+        extra = `<td style="color:var(--red);font-weight:500">${fmt(b)}</td><td class="${diff>0?'chg-up':'chg-dn'}">${diff>0?'↑':'↓'}${pct}%</td>`;
+      }
+    } else {
+      const pct = totalExpA>0 ? Math.round(a/totalExpA*100) : 0;
+      extra = `<td class="chg-na">${pct}%</td>`;
+    }
+    html += `<tr>
+      <td><span class="cat-dot" style="background:${catColor(cat)}"></span>${esc(cat)}</td>
+      <td style="color:var(--red);font-weight:500">${a>0?fmt(a):'—'}</td>
+      ${extra}
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('cat-table-wrap').innerHTML = html;
+}
+
+function renderTop5(txs) {
+  const top = txs.filter(t=>t.type==='expense').sort((a,b)=>b.amount-a.amount).slice(0,5);
+  const el  = document.getElementById('top5-wrap');
+  if (!top.length) { el.innerHTML='<div class="empty" style="padding:1.5rem">No expenses this period</div>'; return; }
+  el.innerHTML = top.map((t,i)=>`
+    <div class="top5-item">
+      <div class="top5-num">${i+1}</div>
+      <div class="top5-info">
+        <div class="top5-name">${esc(t.category)}${t.note?' · '+esc(t.note):''}</div>
+        <div class="top5-date">${fmtDate(t.date)}</div>
+      </div>
+      <div style="color:var(--red);font-weight:600;flex-shrink:0">−${fmt(t.amount)}</div>
+    </div>`).join('');
 }
 
 // ── Import Modal ──────────────────────────────────────────────────────────────
 let importedCSVRows = [];
 
 function openImport() {
-  document.getElementById('import-overlay').classList.add('open');
   importedCSVRows = [];
-  document.getElementById('csv-preview-wrap').style.display = 'none';
-  document.getElementById('csv-status').textContent = '';
+  document.getElementById('csv-preview-wrap').style.display='none';
+  document.getElementById('csv-status').textContent='';
+  document.getElementById('import-overlay').classList.add('open');
 }
 function closeImport() { document.getElementById('import-overlay').classList.remove('open'); }
-function importOverlayClick(e) { if (e.target===document.getElementById('import-overlay')) closeImport(); }
-
-function switchTab(tab, btn) {
+function importOverlayClick(e) { if(e.target===document.getElementById('import-overlay')) closeImport(); }
+function switchImportTab(tab, btn) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-'+tab).classList.add('active');
 }
 
-// ── CSV Import ────────────────────────────────────────────────────────────────
 function handleCSV(input) {
-  const file = input.files[0];
-  if (!file) return;
-  document.getElementById('csv-drop').textContent = '📄 ' + file.name;
+  const file = input.files[0]; if(!file) return;
+  document.getElementById('csv-drop').childNodes[0].textContent = '📄 '+file.name+' ';
   const reader = new FileReader();
   reader.onload = e => parseCSVText(e.target.result);
   reader.readAsText(file);
 }
 
 function parseCSVText(text) {
-  const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) { setStatus('csv','Not enough rows in file.', true); return; }
-
-  // Parse rows (handle quoted fields)
+  const lines = text.trim().split(/\r?\n/).filter(l=>l.trim());
+  if (lines.length<2) { setCSVStatus('Not enough rows.',true); return; }
   const rows = lines.map(parseLine);
-  const headers = rows[0].map(h => h.toLowerCase().trim());
-  const dataRows = rows.slice(1);
+  const hdrs = rows[0].map(h=>h.toLowerCase().trim());
+  const data = rows.slice(1);
 
-  // Detect columns
-  const dateIdx   = findCol(headers, ['date','transaction date','txn date','value date','posted']);
-  const descIdx   = findCol(headers, ['description','merchant','details','narrative','memo','payee','transaction','particulars']);
-  const amtIdx    = findCol(headers, ['amount','net amount','transaction amount']);
-  const debitIdx  = findCol(headers, ['debit','withdrawal','charge','dr']);
-  const creditIdx = findCol(headers, ['credit','deposit','payment','cr']);
+  const dateIdx  = findCol(hdrs,['date','transaction date','txn date','value date','posted']);
+  const descIdx  = findCol(hdrs,['description','merchant','details','narrative','memo','payee','particulars']);
+  const amtIdx   = findCol(hdrs,['amount','net amount','transaction amount']);
+  const debIdx   = findCol(hdrs,['debit','withdrawal','charge','dr']);
+  const credIdx  = findCol(hdrs,['credit','deposit','payment','cr']);
 
-  if (dateIdx < 0) { setStatus('csv', 'Could not find a date column. Headers found: ' + headers.join(', '), true); return; }
-  if (descIdx < 0) { setStatus('csv', 'Could not find a description column. Headers found: ' + headers.join(', '), true); return; }
-  if (amtIdx < 0 && debitIdx < 0) { setStatus('csv', 'Could not find an amount column. Headers found: ' + headers.join(', '), true); return; }
+  if (dateIdx<0) { setCSVStatus('No date column found. Headers: '+hdrs.join(', '),true); return; }
+  if (descIdx<0) { setCSVStatus('No description column found.',true); return; }
+  if (amtIdx<0 && debIdx<0) { setCSVStatus('No amount column found.',true); return; }
 
   importedCSVRows = [];
-  for (const row of dataRows) {
+  for (const row of data) {
     if (row.every(c=>!c.trim())) continue;
-    const rawDate = row[dateIdx]?.trim();
-    const desc    = row[descIdx]?.trim() || '';
-    const date    = parseDate(rawDate);
-    if (!date || !desc) continue;
-
-    let amount = 0, type = 'expense';
-
-    if (amtIdx >= 0) {
+    const date = parseDate(row[dateIdx]?.trim());
+    const desc = row[descIdx]?.trim()||'';
+    if (!date||!desc) continue;
+    let amount=0, type='expense';
+    if (amtIdx>=0) {
       const raw = parseFloat((row[amtIdx]||'').replace(/[^0-9.\-]/g,''));
       if (isNaN(raw)) continue;
-      amount = Math.abs(raw);
-      type   = raw < 0 ? 'expense' : 'income';
+      amount=Math.abs(raw); type=raw<0?'expense':'income';
     } else {
-      const deb = parseFloat((row[debitIdx]||'').replace(/[^0-9.]/g,'')) || 0;
-      const cred = creditIdx >= 0 ? parseFloat((row[creditIdx]||'').replace(/[^0-9.]/g,'')) || 0 : 0;
-      if (!deb && !cred) continue;
-      if (deb > 0) { amount = deb; type = 'expense'; }
-      else { amount = cred; type = 'income'; }
+      const deb=(parseFloat((row[debIdx]||'').replace(/[^0-9.]/g,''))||0);
+      const cred=credIdx>=0?(parseFloat((row[credIdx]||'').replace(/[^0-9.]/g,''))||0):0;
+      if (!deb&&!cred) continue;
+      if (deb>0){amount=deb;type='expense';}else{amount=cred;type='income';}
     }
-
-    importedCSVRows.push({ date, description: desc, amount, type, category: guessCategory(desc), include: true });
+    importedCSVRows.push({date,description:desc,amount,type,category:guessCategory(desc),include:true});
   }
 
-  if (!importedCSVRows.length) { setStatus('csv', 'No valid transactions found.', true); return; }
-  renderPreviewTable('csv', importedCSVRows);
-  setStatus('csv', '');
+  if (!importedCSVRows.length) { setCSVStatus('No valid transactions found.',true); return; }
+  renderCSVPreview();
+  setCSVStatus('');
 }
 
 function parseLine(line) {
-  const result = []; let cur = ''; let inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') { inQ = !inQ; }
-    else if (ch === ',' && !inQ) { result.push(cur); cur = ''; }
-    else cur += ch;
+  const r=[]; let cur=''; let q=false;
+  for (let i=0;i<line.length;i++) {
+    const c=line[i];
+    if(c==='"'){q=!q;}else if(c===','&&!q){r.push(cur);cur='';}else cur+=c;
   }
-  result.push(cur);
-  return result.map(s => s.replace(/^"|"$/g,'').trim());
+  r.push(cur);
+  return r.map(s=>s.replace(/^"|"$/g,'').trim());
 }
-
-function findCol(headers, candidates) {
-  for (const c of candidates) {
-    const i = headers.findIndex(h => h.includes(c));
-    if (i >= 0) return i;
-  }
-  return -1;
+function findCol(hdrs,candidates) {
+  for(const c of candidates){const i=hdrs.findIndex(h=>h.includes(c));if(i>=0)return i;}return -1;
 }
-
 function parseDate(raw) {
-  if (!raw) return null;
-  // Try ISO
-  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0,10);
-  // DD/MM/YYYY or MM/DD/YYYY
-  const m = raw.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
-  if (m) {
-    let [,a,b,y] = m;
-    if (y.length === 2) y = '20' + y;
-    const mn = parseInt(a), dn = parseInt(b);
-    // If first part > 12, it must be day
-    if (mn > 12) return `${y}-${String(dn).padStart(2,'0')}-${String(mn).padStart(2,'0')}`;
-    return `${y}-${String(mn).padStart(2,'0')}-${String(dn).padStart(2,'0')}`;
-  }
-  // Month name: "15 Jan 2024"
-  const m2 = raw.match(/(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/);
-  if (m2) {
-    const months = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
-    const mo = months[m2[2].toLowerCase()];
-    if (mo) return `${m2[3]}-${mo}-${m2[1].padStart(2,'0')}`;
-  }
+  if(!raw) return null;
+  if(/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0,10);
+  const m=raw.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+  if(m){let[,a,b,y]=m;if(y.length===2)y='20'+y;const mn=+a,dn=+b;if(mn>12)return`${y}-${String(dn).padStart(2,'0')}-${String(mn).padStart(2,'0')}`;return`${y}-${String(mn).padStart(2,'0')}-${String(dn).padStart(2,'0')}`;}
+  const m2=raw.match(/(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/);
+  if(m2){const mo={jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'}[m2[2].toLowerCase()];if(mo)return`${m2[3]}-${mo}-${m2[1].padStart(2,'0')}`;}
   return null;
 }
 
-function renderPreviewTable(prefix, rows) {
-  const tbody = document.getElementById(prefix+'-tbody');
-  const expCats = CATS.expense;
-  const incCats = CATS.income;
-
-  tbody.innerHTML = rows.map((r, i) => {
-    const cats = r.type === 'income' ? incCats : expCats;
+function renderCSVPreview() {
+  const tbody = document.getElementById('csv-tbody');
+  tbody.innerHTML = importedCSVRows.map((r,i)=>{
+    const cats = CATS[r.type==='income'?'income':'expense'];
     const opts = cats.map(c=>`<option${c===r.category?' selected':''}>${c}</option>`).join('');
     return `<tr>
-      <td><input type="checkbox" ${r.include?'checked':''} onchange="toggleRow('${prefix}',${i},this.checked)"></td>
+      <td><input type="checkbox" ${r.include?'checked':''} onchange="csvToggle(${i},this.checked)"></td>
       <td style="white-space:nowrap">${r.date}</td>
-      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.description)}">${esc(r.description)}</td>
+      <td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.description)}">${esc(r.description)}</td>
       <td class="${r.type==='income'?'amt-inc':'amt-exp'}">${r.type==='income'?'+':'−'}${fmt(r.amount)}</td>
-      <td><select onchange="updateCat('${prefix}',${i},this.value)">${opts}</select></td>
+      <td><select onchange="importedCSVRows[${i}].category=this.value">${opts}</select></td>
     </tr>`;
   }).join('');
-
-  const count = rows.filter(r=>r.include).length;
-  document.getElementById(prefix+'-count').textContent = `${count} of ${rows.length} transactions selected`;
-  document.getElementById(prefix+'-preview-wrap').style.display = '';
-  if (prefix === 'img') document.getElementById('img-preview-wrap2').style.display = '';
+  updateCSVCount();
+  document.getElementById('csv-preview-wrap').style.display='';
 }
-
-function toggleRow(prefix, i, val) {
-  importedCSVRows[i].include = val;
-  const count = importedCSVRows.filter(r=>r.include).length;
-  document.getElementById('csv-count').textContent = `${count} of ${importedCSVRows.length} transactions selected`;
+function csvToggle(i,v){ importedCSVRows[i].include=v; updateCSVCount(); }
+function updateCSVCount(){
+  const n=importedCSVRows.filter(r=>r.include).length;
+  document.getElementById('csv-count').textContent=`${n} of ${importedCSVRows.length} transactions selected`;
 }
-function updateCat(prefix, i, val) {
-  importedCSVRows[i].category = val;
+function importCSV() {
+  const sel=importedCSVRows.filter(r=>r.include);
+  if(!sel.length){setCSVStatus('No rows selected.',true);return;}
+  const txs=load();
+  sel.forEach(r=>txs.push({id:uid(),type:r.type,amount:r.amount,category:r.category,note:r.description,date:r.date}));
+  persist(txs); render(); closeImport();
 }
-
-function importCSV() { doImport(importedCSVRows, 'csv'); }
-
-function doImport(rows, prefix) {
-  const selected = rows.filter(r=>r.include);
-  if (!selected.length) { setStatus(prefix, 'No rows selected.', true); return; }
-  const txs = load();
-  selected.forEach(r => txs.push({
-    id: uid(), type: r.type, amount: r.amount,
-    category: r.category, note: r.description, date: r.date
-  }));
-  persist(txs);
-  render();
-  closeImport();
+function setCSVStatus(msg,err=false){
+  const el=document.getElementById('csv-status');
+  el.textContent=msg; el.className='status-bar'+(err?' err':'');
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function setStatus(prefix, msg, isErr=false) {
-  const el = document.getElementById(prefix+'-status');
-  el.textContent = msg;
-  el.className = 'status-bar' + (isErr ? ' err' : '');
-}
-function fmt(n) { return '$' + (n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function fmt(n) { return '$'+(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
 function today() { return new Date().toISOString().split('T')[0]; }
 function fmtDate(d) { return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 
 render();
 </script>
