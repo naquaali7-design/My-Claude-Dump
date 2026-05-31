@@ -8,6 +8,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
       --green: #22c55e; --red: #ef4444; --blue: #3b82f6;
+      --orange: #f97316; --purple: #a855f7;
       --bg: #0f172a; --surface: #1e293b; --border: #334155;
       --text: #f1f5f9; --muted: #94a3b8;
     }
@@ -23,26 +24,39 @@
     .stat { background: var(--surface); border-radius: 0.75rem; padding: 1rem; text-align: center; }
     .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
     .stat-value { font-size: 1.3rem; font-weight: 600; }
+    .loans-summary { background: var(--surface); border-radius: 0.75rem; padding: 1rem; margin-bottom: 0.75rem; display: none; }
+    .loans-summary.visible { display: block; }
+    .loans-summary-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.6rem; }
+    .loans-summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; padding: 0.25rem 0; }
+    .loans-summary-row + .loans-summary-row { border-top: 1px solid var(--border); margin-top: 0.25rem; padding-top: 0.5rem; }
+    .pill { font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 99px; }
+    .pill-orange { background: rgba(249,115,22,.15); color: var(--orange); }
+    .pill-purple { background: rgba(168,85,247,.15); color: var(--purple); }
     .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
-    .btn { padding: 0.8rem 1rem; border: none; border-radius: 0.75rem; font-size: 1rem; font-weight: 600; cursor: pointer; }
-    .btn-expense { background: var(--red); color: #fff; }
-    .btn-income { background: var(--green); color: #fff; }
-    .btn-primary { background: var(--blue); color: #fff; width: 100%; padding: 0.8rem; border: none; border-radius: 0.75rem; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    .btn { padding: 0.8rem 1rem; border: none; border-radius: 0.75rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+    .btn-expense    { background: var(--red);    color: #fff; }
+    .btn-income     { background: var(--green);  color: #fff; }
+    .btn-loan-from  { background: rgba(249,115,22,.18); color: var(--orange); border: 1px solid rgba(249,115,22,.3); }
+    .btn-loan-to    { background: rgba(168,85,247,.18); color: var(--purple); border: 1px solid rgba(168,85,247,.3); }
     .btn-ghost { background: var(--surface); color: var(--muted); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.85rem; cursor: pointer; }
-    .filter-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.875rem; }
-    .filter-tab { flex: 1; padding: 0.5rem; border-radius: 0.5rem; border: none; background: var(--surface); color: var(--muted); cursor: pointer; font-size: 0.875rem; font-weight: 500; }
+    .filter-tabs { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.4rem; margin-bottom: 0.875rem; }
+    .filter-tab { padding: 0.45rem 0.25rem; border-radius: 0.5rem; border: none; background: var(--surface); color: var(--muted); cursor: pointer; font-size: 0.78rem; font-weight: 500; }
     .filter-tab.active { background: var(--blue); color: #fff; }
     .section-title { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
     .transaction { display: flex; align-items: center; gap: 0.75rem; background: var(--surface); border-radius: 0.75rem; padding: 0.875rem; margin-bottom: 0.5rem; }
     .tx-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
-    .tx-icon.expense { background: rgba(239,68,68,.15); }
-    .tx-icon.income  { background: rgba(34,197,94,.15); }
+    .tx-icon.expense   { background: rgba(239,68,68,.15); }
+    .tx-icon.income    { background: rgba(34,197,94,.15); }
+    .tx-icon.loan_from { background: rgba(249,115,22,.15); }
+    .tx-icon.loan_to   { background: rgba(168,85,247,.15); }
     .tx-info { flex: 1; min-width: 0; }
     .tx-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.95rem; }
     .tx-date { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
     .tx-amount { font-weight: 600; flex-shrink: 0; font-size: 0.95rem; }
-    .tx-amount.expense { color: var(--red); }
-    .tx-amount.income  { color: var(--green); }
+    .tx-amount.expense   { color: var(--red); }
+    .tx-amount.income    { color: var(--green); }
+    .tx-amount.loan_from { color: var(--orange); }
+    .tx-amount.loan_to   { color: var(--purple); }
     .tx-del { background: none; border: none; color: var(--border); cursor: pointer; font-size: 1.3rem; line-height: 1; padding: 0.2rem 0.4rem; border-radius: 0.3rem; }
     .tx-del:hover { color: var(--red); }
     .empty { text-align: center; color: var(--muted); padding: 3rem 1rem; font-size: 0.9rem; }
@@ -81,15 +95,25 @@
     </div>
   </div>
 
+  <!-- Loans summary — only shown when loans exist -->
+  <div class="loans-summary" id="loans-summary">
+    <div class="loans-summary-title">Loans</div>
+    <div id="loans-from-rows"></div>
+    <div id="loans-to-rows"></div>
+  </div>
+
   <div class="actions">
-    <button class="btn btn-expense" onclick="openModal('expense')">− Expense</button>
-    <button class="btn btn-income"  onclick="openModal('income')">+ Income</button>
+    <button class="btn btn-expense"   onclick="openModal('expense')">− Expense</button>
+    <button class="btn btn-income"    onclick="openModal('income')">+ Income</button>
+    <button class="btn btn-loan-from" onclick="openModal('loan_from')">📥 Loan From</button>
+    <button class="btn btn-loan-to"   onclick="openModal('loan_to')">📤 Loan To</button>
   </div>
 
   <div class="filter-tabs">
     <button class="filter-tab active" onclick="setFilter('all',this)">All</button>
     <button class="filter-tab" onclick="setFilter('income',this)">Income</button>
     <button class="filter-tab" onclick="setFilter('expense',this)">Expenses</button>
+    <button class="filter-tab" onclick="setFilter('loans',this)">Loans</button>
   </div>
 
   <div class="section-title">Transactions</div>
@@ -104,9 +128,15 @@
       <label>Amount</label>
       <input type="number" id="tx-amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal">
     </div>
-    <div class="form-group">
+    <!-- Category — shown for expense/income -->
+    <div class="form-group" id="category-group">
       <label>Category</label>
       <select id="tx-category"></select>
+    </div>
+    <!-- Person name — shown for loans -->
+    <div class="form-group" id="person-group" style="display:none">
+      <label>Person's Name</label>
+      <input type="text" id="tx-person" placeholder="e.g. John">
     </div>
     <div class="form-group">
       <label>Note (optional)</label>
@@ -130,23 +160,22 @@ const CATS = {
 };
 const ICONS = {
   Food:'🍔',Transport:'🚗',Housing:'🏠',Entertainment:'🎬',Health:'💊',
-  Shopping:'🛍️',Bills:'📄',Salary:'💼',Freelance:'💻',Gift:'🎁',Investment:'📈',Other:'📋'
+  Shopping:'🛍️',Bills:'📄',Salary:'💼',Freelance:'💻',Gift:'🎁',Investment:'📈',Other:'📋',
+  loan_from:'📥', loan_to:'📤'
 };
 
 let currentType = 'expense';
 let currentFilter = 'all';
 
-function load() {
-  return JSON.parse(localStorage.getItem('budget-tx') || '[]');
-}
-function persist(txs) {
-  localStorage.setItem('budget-tx', JSON.stringify(txs));
-}
+function load() { return JSON.parse(localStorage.getItem('budget-tx') || '[]'); }
+function persist(txs) { localStorage.setItem('budget-tx', JSON.stringify(txs)); }
+
+function isLoan(type) { return type === 'loan_from' || type === 'loan_to'; }
 
 function render() {
   const txs = load();
-  const income   = txs.filter(t => t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const expenses = txs.filter(t => t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const income   = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expenses = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   const bal = income - expenses;
 
   const balEl = document.getElementById('balance-display');
@@ -155,29 +184,80 @@ function render() {
   document.getElementById('income-display').textContent   = fmt(income);
   document.getElementById('expenses-display').textContent = fmt(expenses);
 
-  const visible = currentFilter === 'all' ? txs : txs.filter(t => t.type === currentFilter);
+  renderLoansSummary(txs);
+
+  const visible = currentFilter === 'loans'
+    ? txs.filter(t => isLoan(t.type))
+    : currentFilter === 'all'
+      ? txs
+      : txs.filter(t => t.type === currentFilter);
+
+  visible.sort((a,b) => b.date.localeCompare(a.date));
+
   const el = document.getElementById('tx-list');
   if (!visible.length) { el.innerHTML = '<div class="empty">No transactions yet</div>'; return; }
 
-  // Sort by date descending
-  visible.sort((a,b) => b.date.localeCompare(a.date));
+  el.innerHTML = visible.map(t => {
+    const isLoanTx = isLoan(t.type);
+    const label = isLoanTx
+      ? (t.type === 'loan_from' ? 'From ' : 'To ') + esc(t.person || '?')
+      : esc(t.category);
+    const sign = (t.type === 'expense' || t.type === 'loan_to') ? '−' : '+';
+    const badge = t.type === 'loan_from'
+      ? `<span class="pill pill-orange">You owe</span>`
+      : t.type === 'loan_to'
+        ? `<span class="pill pill-purple">Owed to you</span>`
+        : '';
+    return `
+      <div class="transaction">
+        <div class="tx-icon ${t.type}">${isLoanTx ? ICONS[t.type] : (ICONS[t.category]||'📋')}</div>
+        <div class="tx-info">
+          <div class="tx-name">${label}${t.note ? ' · '+esc(t.note) : ''}${badge ? ' '+badge : ''}</div>
+          <div class="tx-date">${fmtDate(t.date)}</div>
+        </div>
+        <div class="tx-amount ${t.type}">${sign}${fmt(t.amount)}</div>
+        <button class="tx-del" onclick="del('${t.id}')">×</button>
+      </div>`;
+  }).join('');
+}
 
-  el.innerHTML = visible.map(t => `
-    <div class="transaction">
-      <div class="tx-icon ${t.type}">${ICONS[t.category]||'📋'}</div>
-      <div class="tx-info">
-        <div class="tx-name">${esc(t.category)}${t.note?' · '+esc(t.note):''}</div>
-        <div class="tx-date">${fmtDate(t.date)}</div>
-      </div>
-      <div class="tx-amount ${t.type}">${t.type==='expense'?'−':'+'}${fmt(t.amount)}</div>
-      <button class="tx-del" onclick="del('${t.id}')">×</button>
-    </div>
-  `).join('');
+function renderLoansSummary(txs) {
+  const fromLoans = txs.filter(t=>t.type==='loan_from');
+  const toLoans   = txs.filter(t=>t.type==='loan_to');
+  const summaryEl = document.getElementById('loans-summary');
+
+  if (!fromLoans.length && !toLoans.length) {
+    summaryEl.classList.remove('visible');
+    return;
+  }
+  summaryEl.classList.add('visible');
+
+  // Group by person, sum amounts
+  const groupBy = (arr) => arr.reduce((map, t) => {
+    const name = t.person || 'Unknown';
+    map[name] = (map[name] || 0) + t.amount;
+    return map;
+  }, {});
+
+  const fromMap = groupBy(fromLoans);
+  const toMap   = groupBy(toLoans);
+
+  document.getElementById('loans-from-rows').innerHTML = Object.entries(fromMap).map(([name, total]) => `
+    <div class="loans-summary-row">
+      <span>📥 You owe <strong>${esc(name)}</strong></span>
+      <span style="color:var(--orange);font-weight:600">${fmt(total)}</span>
+    </div>`).join('');
+
+  document.getElementById('loans-to-rows').innerHTML = Object.entries(toMap).map(([name, total]) => `
+    <div class="loans-summary-row">
+      <span>📤 <strong>${esc(name)}</strong> owes you</span>
+      <span style="color:var(--purple);font-weight:600">${fmt(total)}</span>
+    </div>`).join('');
 }
 
 function del(id) {
   if (!confirm('Delete this transaction?')) return;
-  persist(load().filter(t => t.id !== id));
+  persist(load().filter(t=>t.id!==id));
   render();
 }
 
@@ -189,11 +269,20 @@ function clearAll() {
 
 function openModal(type) {
   currentType = type;
-  const isExp = type === 'expense';
-  document.getElementById('modal-title').textContent  = isExp ? 'Add Expense' : 'Add Income';
-  document.getElementById('modal-submit').className   = 'btn ' + (isExp ? 'btn-expense' : 'btn-income');
-  document.getElementById('tx-category').innerHTML   = CATS[type].map(c=>`<option>${c}</option>`).join('');
+  const loan = isLoan(type);
+  const titles = { expense:'Add Expense', income:'Add Income', loan_from:'Borrowed Money (Loan From)', loan_to:'Lent Money (Loan To)' };
+  const btnClass = { expense:'btn-expense', income:'btn-income', loan_from:'btn-loan-from', loan_to:'btn-loan-to' };
+
+  document.getElementById('modal-title').textContent = titles[type];
+  document.getElementById('modal-submit').className  = 'btn ' + btnClass[type];
+  document.getElementById('category-group').style.display = loan ? 'none' : '';
+  document.getElementById('person-group').style.display   = loan ? '' : 'none';
+
+  if (!loan) {
+    document.getElementById('tx-category').innerHTML = CATS[type].map(c=>`<option>${c}</option>`).join('');
+  }
   document.getElementById('tx-amount').value = '';
+  document.getElementById('tx-person').value = '';
   document.getElementById('tx-note').value   = '';
   document.getElementById('tx-date').value   = today();
   document.getElementById('overlay').classList.add('open');
@@ -205,14 +294,22 @@ function overlayClick(e) { if (e.target===document.getElementById('overlay')) cl
 
 function save() {
   const amount = parseFloat(document.getElementById('tx-amount').value);
-  const category = document.getElementById('tx-category').value;
-  const note  = document.getElementById('tx-note').value.trim();
-  const date  = document.getElementById('tx-date').value;
+  const note   = document.getElementById('tx-note').value.trim();
+  const date   = document.getElementById('tx-date').value;
   if (!amount || amount <= 0) { alert('Enter a valid amount.'); return; }
   if (!date) { alert('Pick a date.'); return; }
 
+  const tx = { id: Date.now().toString(36), type: currentType, amount, note, date };
+  if (isLoan(currentType)) {
+    const person = document.getElementById('tx-person').value.trim();
+    if (!person) { alert("Enter the person's name."); return; }
+    tx.person = person;
+  } else {
+    tx.category = document.getElementById('tx-category').value;
+  }
+
   const txs = load();
-  txs.push({ id: Date.now().toString(36), type: currentType, amount, category, note, date });
+  txs.push(tx);
   persist(txs);
   closeModal();
   render();
