@@ -403,9 +403,11 @@ let currentFilter = 'all';
 
 function render() {
   const txs = load();
-  const income   = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const expenses = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-  const bal = income - expenses;
+  const income    = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expenses  = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const loanIn    = txs.filter(t=>t.type==='loan_from').reduce((s,t)=>s+t.amount,0);
+  const loanOut   = txs.filter(t=>t.type==='loan_to').reduce((s,t)=>s+t.amount,0);
+  const bal = income - expenses + loanIn - loanOut;
   const balEl = document.getElementById('balance-display');
   balEl.textContent = (bal<0?'-':'') + fmt(Math.abs(bal));
   balEl.className = 'balance-amount ' + (bal>=0?'pos':'neg');
