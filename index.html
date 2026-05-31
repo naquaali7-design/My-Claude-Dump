@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget Manager</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --green: #22c55e; --red: #ef4444; --blue: #3b82f6;
+      --bg: #0f172a; --surface: #1e293b; --border: #334155;
+      --text: #f1f5f9; --muted: #94a3b8;
+    }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .center-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; }
+    .card { background: var(--surface); border-radius: 1rem; padding: 2rem; width: 100%; max-width: 440px; }
+    .card h2 { font-size: 1.4rem; margin-bottom: 0.4rem; }
+    .card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.5; }
+    .app { max-width: 480px; margin: 0 auto; padding: 1rem 1rem 5rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-top: 0.5rem; }
+    .header h1 { font-size: 1.25rem; font-weight: 700; }
+    .balance-card { background: var(--surface); border-radius: 1rem; padding: 1.5rem; text-align: center; margin-bottom: 0.75rem; }
+    .balance-label { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem; }
+    .balance-amount { font-size: 2.75rem; font-weight: 700; }
+    .pos { color: var(--green); } .neg { color: var(--red); }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .stat { background: var(--surface); border-radius: 0.75rem; padding: 1rem; text-align: center; }
+    .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+    .stat-value { font-size: 1.3rem; font-weight: 600; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .btn { padding: 0.75rem 1rem; border: none; border-radius: 0.75rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+    .btn:hover { opacity: 0.82; }
+    .btn-expense { background: var(--red); color: #fff; }
+    .btn-income { background: var(--green); color: #fff; }
+    .btn-primary { background: var(--blue); color: #fff; width: 100%; }
+    .btn-ghost { background: var(--surface); color: var(--muted); border: 1px solid var(--border); font-size: 0.85rem; padding: 0.4rem 0.75rem; border-radius: 0.5rem; cursor: pointer; }
+    .filter-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.875rem; }
+    .filter-tab { flex: 1; padding: 0.5rem; border-radius: 0.5rem; border: none; background: var(--surface); color: var(--muted); cursor: pointer; font-size: 0.875rem; font-weight: 500; transition: all 0.15s; }
+    .filter-tab.active { background: var(--blue); color: #fff; }
+    .section-title { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .transaction { display: flex; align-items: center; gap: 0.75rem; background: var(--surface); border-radius: 0.75rem; padding: 0.875rem; margin-bottom: 0.5rem; }
+    .tx-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+    .tx-icon.expense { background: rgba(239,68,68,.15); }
+    .tx-icon.income { background: rgba(34,197,94,.15); }
+    .tx-info { flex: 1; min-width: 0; }
+    .tx-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.95rem; }
+    .tx-date { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
+    .tx-amount { font-weight: 600; flex-shrink: 0; font-size: 0.95rem; }
+    .tx-amount.expense { color: var(--red); }
+    .tx-amount.income { color: var(--green); }
+    .tx-del { background: none; border: none; color: var(--border); cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0.2rem 0.3rem; border-radius: 0.3rem; transition: color 0.15s; }
+    .tx-del:hover { color: var(--red); }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 50; }
+    .overlay.open { display: flex; align-items: flex-end; justify-content: center; }
+    .modal { background: var(--surface); border-radius: 1.25rem 1.25rem 0 0; padding: 1.5rem; width: 100%; max-width: 480px; }
+    .modal-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    input, select, textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 0.5rem; padding: 0.7rem 0.85rem; font-size: 1rem; font-family: inherit; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); }
+    textarea { resize: vertical; min-height: 80px; font-size: 0.85rem; }
+    .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.25rem; }
+    .empty { text-align: center; color: var(--muted); padding: 3rem 1rem; font-size: 0.9rem; }
+    .error-msg { color: var(--red); font-size: 0.85rem; margin-top: 0.5rem; }
+    a { color: var(--blue); }
+    .spinner { display: inline-block; width: 1.25rem; height: 1.25rem; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (min-width: 600px) {
+      .overlay { align-items: center; }
+      .modal { border-radius: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Setup Screen -->
+<div id="setup-screen" class="screen">
+  <div class="center-screen">
+    <div class="card">
+      <div style="font-size:2.5rem;margin-bottom:.75rem">💰</div>
+      <h2>Budget Manager Setup</h2>
+      <p>
+        Paste your Firebase config below to enable real-time sync across all your devices.
+        <br><br>
+        <a href="https://console.firebase.google.com" target="_blank" rel="noopener">→ Get a free Firebase config</a>
+        (create project → Firestore Database → Authentication → enable Google sign-in)
+      </p>
+      <div class="form-group">
+        <label>Firebase Config (JSON)</label>
+        <textarea id="firebase-config-input" rows="7" placeholder='{
+  "apiKey": "...",
+  "authDomain": "...",
+  "projectId": "...",
+  "storageBucket": "...",
+  "messagingSenderId": "...",
+  "appId": "..."
+}'></textarea>
+        <div class="error-msg" id="setup-error"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveConfig()">Save &amp; Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Auth Screen -->
+<div id="auth-screen" class="screen">
+  <div class="center-screen">
+    <div class="card" style="text-align:center">
+      <div style="font-size:3rem;margin-bottom:.75rem">💰</div>
+      <h2 style="margin-bottom:.5rem">Budget Manager</h2>
+      <p>Track expenses &amp; income, synced across all your devices in real time.</p>
+      <button class="btn btn-primary" onclick="signInGoogle()">Sign in with Google</button>
+      <br>
+      <button class="btn-ghost" style="margin-top:.75rem" onclick="resetConfig()">Change Firebase config</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading -->
+<div id="loading-screen" class="screen">
+  <div class="center-screen" style="flex-direction:column;gap:1rem">
+    <div class="spinner"></div>
+    <div style="color:var(--muted);font-size:.9rem">Connecting…</div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app-screen" class="screen">
+  <div class="app">
+    <div class="header">
+      <h1>💰 Budget</h1>
+      <button class="btn-ghost" onclick="doSignOut()">Sign out</button>
+    </div>
+
+    <div class="balance-card">
+      <div class="balance-label">Total Balance</div>
+      <div class="balance-amount pos" id="balance-display">$0.00</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label" style="color:var(--green)">Income</div>
+        <div class="stat-value pos" id="income-display">$0.00</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label" style="color:var(--red)">Expenses</div>
+        <div class="stat-value neg" id="expenses-display">$0.00</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-expense" onclick="openModal('expense')">− Expense</button>
+      <button class="btn btn-income" onclick="openModal('income')">+ Income</button>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-tab" onclick="setFilter('income',this)">Income</button>
+      <button class="filter-tab" onclick="setFilter('expense',this)">Expenses</button>
+    </div>
+
+    <div class="section-title">Transactions</div>
+    <div id="tx-list"><div class="empty">No transactions yet</div></div>
+  </div>
+</div>
+
+<!-- Add Transaction Modal -->
+<div class="overlay" id="modal-overlay" onclick="overlayClick(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-title" id="modal-title">Add Expense</div>
+    <div class="form-group">
+      <label>Amount</label>
+      <input type="number" id="tx-amount" placeholder="0.00" min="0.01" step="0.01">
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="tx-category"></select>
+    </div>
+    <div class="form-group">
+      <label>Note (optional)</label>
+      <input type="text" id="tx-note" placeholder="What's this for?">
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="tx-date">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="width:100%" onclick="closeModal()">Cancel</button>
+      <button class="btn" id="modal-submit" onclick="addTransaction()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+const CATS = {
+  expense: ['Food','Transport','Housing','Entertainment','Health','Shopping','Bills','Other'],
+  income:  ['Salary','Freelance','Gift','Investment','Other']
+};
+const ICONS = {
+  Food:'🍔',Transport:'🚗',Housing:'🏠',Entertainment:'🎬',Health:'💊',
+  Shopping:'🛍️',Bills:'📄',Salary:'💼',Freelance:'💻',Gift:'🎁',Investment:'📈',Other:'📋'
+};
+
+let db, auth, unsubscribe;
+let allTx = [];
+let currentType = 'expense';
+let currentFilter = 'all';
+
+// ── Screens ──────────────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── Firebase init ─────────────────────────────────────────────────────────────
+function saveConfig() {
+  const raw = document.getElementById('firebase-config-input').value.trim();
+  const err = document.getElementById('setup-error');
+  try {
+    const cfg = JSON.parse(raw);
+    if (!cfg.apiKey || !cfg.projectId) throw new Error('Missing apiKey or projectId');
+    localStorage.setItem('fb-cfg', raw);
+    err.textContent = '';
+    startFirebase(cfg);
+  } catch(e) {
+    err.textContent = 'Invalid config: ' + e.message;
+  }
+}
+
+function resetConfig() {
+  localStorage.removeItem('fb-cfg');
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  // delete firebase app so we can reinit
+  if (firebase.apps.length) firebase.app().delete().catch(() => {});
+  show('setup-screen');
+}
+
+function startFirebase(cfg) {
+  show('loading-screen');
+  const existing = firebase.apps.length ? firebase.app().delete() : Promise.resolve();
+  existing.then(() => {
+    firebase.initializeApp(cfg);
+    auth = firebase.auth();
+    db   = firebase.firestore();
+    // Offline persistence (works while traveling without internet)
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    auth.onAuthStateChanged(user => {
+      if (user) { show('app-screen'); listenTx(user.uid); }
+      else show('auth-screen');
+    });
+  }).catch(e => {
+    document.getElementById('setup-error').textContent = e.message;
+    show('setup-screen');
+  });
+}
+
+function signInGoogle() {
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert(e.message));
+}
+
+function doSignOut() {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  auth.signOut();
+}
+
+// ── Firestore ─────────────────────────────────────────────────────────────────
+function listenTx(uid) {
+  if (unsubscribe) unsubscribe();
+  unsubscribe = db.collection('users').doc(uid)
+    .collection('transactions')
+    .orderBy('date', 'desc')
+    .onSnapshot(snap => {
+      allTx = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      render();
+    });
+}
+
+async function addTransaction() {
+  const amount = parseFloat(document.getElementById('tx-amount').value);
+  const category = document.getElementById('tx-category').value;
+  const note = document.getElementById('tx-note').value.trim();
+  const date = document.getElementById('tx-date').value;
+
+  if (!amount || amount <= 0) { alert('Enter a valid amount.'); return; }
+  if (!date) { alert('Pick a date.'); return; }
+
+  const uid = auth.currentUser.uid;
+  await db.collection('users').doc(uid).collection('transactions').add({
+    type: currentType, amount, category, note, date,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  closeModal();
+}
+
+async function deleteTx(id) {
+  if (!confirm('Delete this transaction?')) return;
+  const uid = auth.currentUser.uid;
+  await db.collection('users').doc(uid).collection('transactions').doc(id).delete();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  const visible = currentFilter === 'all' ? allTx : allTx.filter(t => t.type === currentFilter);
+  renderSummary();
+  renderList(visible);
+}
+
+function renderSummary() {
+  const income   = allTx.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+  const expenses = allTx.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+  const bal = income - expenses;
+
+  const balEl = document.getElementById('balance-display');
+  balEl.textContent = (bal < 0 ? '-' : '') + fmt(Math.abs(bal));
+  balEl.className = 'balance-amount ' + (bal >= 0 ? 'pos' : 'neg');
+  document.getElementById('income-display').textContent   = fmt(income);
+  document.getElementById('expenses-display').textContent = fmt(expenses);
+}
+
+function renderList(txs) {
+  const el = document.getElementById('tx-list');
+  if (!txs.length) { el.innerHTML = '<div class="empty">No transactions here yet</div>'; return; }
+  el.innerHTML = txs.map(t => `
+    <div class="transaction">
+      <div class="tx-icon ${t.type}">${ICONS[t.category] || '📋'}</div>
+      <div class="tx-info">
+        <div class="tx-name">${esc(t.category)}${t.note ? ' · ' + esc(t.note) : ''}</div>
+        <div class="tx-date">${fmtDate(t.date)}</div>
+      </div>
+      <div class="tx-amount ${t.type}">${t.type === 'expense' ? '−' : '+'}${fmt(t.amount)}</div>
+      <button class="tx-del" onclick="deleteTx('${t.id}')" title="Delete">×</button>
+    </div>
+  `).join('');
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal(type) {
+  currentType = type;
+  const isExp = type === 'expense';
+  document.getElementById('modal-title').textContent = isExp ? 'Add Expense' : 'Add Income';
+  document.getElementById('modal-submit').className  = 'btn ' + (isExp ? 'btn-expense' : 'btn-income');
+  document.getElementById('tx-category').innerHTML   =
+    CATS[type].map(c => `<option>${c}</option>`).join('');
+  document.getElementById('tx-amount').value = '';
+  document.getElementById('tx-note').value   = '';
+  document.getElementById('tx-date').value   = today();
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('tx-amount').focus(), 50);
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function overlayClick(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmt(n) { return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fmtDate(d) {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('fb-cfg');
+  if (saved) {
+    try { startFirebase(JSON.parse(saved)); }
+    catch { show('setup-screen'); }
+  } else {
+    show('setup-screen');
+  }
+});
+</script>
+</body>
+</html>
