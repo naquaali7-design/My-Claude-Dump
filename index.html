@@ -88,8 +88,6 @@
     .file-drop { border: 2px dashed var(--border); border-radius: 0.75rem; padding: 1.5rem; text-align: center; cursor: pointer; color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; position: relative; }
     .file-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
     .file-drop:hover { border-color: var(--blue); color: var(--text); }
-    .img-preview-wrap { margin-bottom: 1rem; display: none; }
-    .img-preview-wrap img { width: 100%; border-radius: 0.5rem; max-height: 200px; object-fit: contain; background: var(--bg); }
 
     /* Preview table */
     .preview-wrap { margin-top: 1rem; }
@@ -222,30 +220,19 @@
 
     <!-- Image Tab -->
     <div class="tab-content" id="tab-image">
-      <div class="form-group">
-        <label>Claude API Key <span style="color:var(--muted);text-transform:none;font-size:.75rem">(stored locally, never sent anywhere else)</span></label>
-        <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." oninput="saveApiKey(this.value)">
+      <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:.75rem;padding:1.1rem;margin-bottom:1rem">
+        <div style="font-weight:600;margin-bottom:.4rem">How to import from a screenshot</div>
+        <ol style="font-size:.875rem;color:var(--muted);line-height:1.8;padding-left:1.25rem">
+          <li>Take a screenshot of your bank statement or receipt</li>
+          <li>Open your <strong style="color:var(--text)">Claude chat</strong> (claude.ai or this session)</li>
+          <li>Drop the image in the chat and say <em style="color:var(--text)">"Extract transactions as CSV"</em></li>
+          <li>Download the CSV Claude gives you</li>
+          <li>Come back here and use the <strong style="color:var(--text)">CSV tab</strong> to import it</li>
+        </ol>
       </div>
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Upload a screenshot of a bank statement, receipt, or transaction list. AI will extract the transactions.</p>
-      <div class="file-drop" id="img-drop">
-        🖼 Tap to choose an image
-        <input type="file" accept="image/*" onchange="handleImage(this)">
+      <div style="font-size:.82rem;color:var(--muted);text-align:center;padding:.5rem 0">
+        This uses your existing Claude subscription — no extra API key needed.
       </div>
-      <div class="img-preview-wrap" id="img-preview-wrap">
-        <img id="img-preview-el" src="" alt="preview">
-      </div>
-      <button class="btn-full" id="extract-btn" onclick="extractFromImage()" style="margin-bottom:.5rem" disabled>Extract with AI</button>
-      <div class="preview-wrap" id="img-preview-wrap2" style="display:none">
-        <div class="preview-count" id="img-count"></div>
-        <div style="overflow-x:auto">
-          <table class="preview-table" id="img-table">
-            <thead><tr><th></th><th>Date</th><th>Description</th><th>Amount</th><th>Category</th></tr></thead>
-            <tbody id="img-tbody"></tbody>
-          </table>
-        </div>
-        <button class="btn-full" onclick="importImage()">Import Selected</button>
-      </div>
-      <div class="status-bar" id="img-status"></div>
     </div>
 
     <button class="modal-cancel" style="width:100%;margin-top:1rem" onclick="closeImport()">Close</button>
@@ -295,8 +282,6 @@ function guessCategory(desc) {
 // ── Storage ───────────────────────────────────────────────────────────────────
 function load() { return JSON.parse(localStorage.getItem('budget-tx') || '[]'); }
 function persist(txs) { localStorage.setItem('budget-tx', JSON.stringify(txs)); }
-function saveApiKey(v) { if (v) localStorage.setItem('claude-api-key', v); }
-function loadApiKey() { return localStorage.getItem('claude-api-key') || ''; }
 function isLoan(t) { return t === 'loan_from' || t === 'loan_to'; }
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -420,22 +405,12 @@ function setFilter(f, btn) {
 
 // ── Import Modal ──────────────────────────────────────────────────────────────
 let importedCSVRows = [];
-let importedImgRows = [];
-let imgBase64 = null;
-let imgMime   = null;
 
 function openImport() {
   document.getElementById('import-overlay').classList.add('open');
-  document.getElementById('api-key-input').value = loadApiKey();
   importedCSVRows = [];
-  importedImgRows = [];
   document.getElementById('csv-preview-wrap').style.display = 'none';
-  document.getElementById('img-preview-wrap2').style.display = 'none';
-  document.getElementById('img-preview-wrap').style.display = 'none';
   document.getElementById('csv-status').textContent = '';
-  document.getElementById('img-status').textContent = '';
-  document.getElementById('extract-btn').disabled = true;
-  imgBase64 = null;
 }
 function closeImport() { document.getElementById('import-overlay').classList.remove('open'); }
 function importOverlayClick(e) { if (e.target===document.getElementById('import-overlay')) closeImport(); }
@@ -576,18 +551,15 @@ function renderPreviewTable(prefix, rows) {
 }
 
 function toggleRow(prefix, i, val) {
-  const rows = prefix === 'csv' ? importedCSVRows : importedImgRows;
-  rows[i].include = val;
-  const count = rows.filter(r=>r.include).length;
-  document.getElementById(prefix+'-count').textContent = `${count} of ${rows.length} transactions selected`;
+  importedCSVRows[i].include = val;
+  const count = importedCSVRows.filter(r=>r.include).length;
+  document.getElementById('csv-count').textContent = `${count} of ${importedCSVRows.length} transactions selected`;
 }
 function updateCat(prefix, i, val) {
-  const rows = prefix === 'csv' ? importedCSVRows : importedImgRows;
-  rows[i].category = val;
+  importedCSVRows[i].category = val;
 }
 
 function importCSV() { doImport(importedCSVRows, 'csv'); }
-function importImage() { doImport(importedImgRows, 'img'); }
 
 function doImport(rows, prefix) {
   const selected = rows.filter(r=>r.include);
@@ -600,95 +572,6 @@ function doImport(rows, prefix) {
   persist(txs);
   render();
   closeImport();
-}
-
-// ── Screenshot / Image Import ─────────────────────────────────────────────────
-function handleImage(input) {
-  const file = input.files[0];
-  if (!file) return;
-  imgMime = file.type || 'image/jpeg';
-  document.getElementById('img-drop').textContent = '🖼 ' + file.name;
-  const reader = new FileReader();
-  reader.onload = e => {
-    imgBase64 = e.target.result.split(',')[1];
-    const imgEl = document.getElementById('img-preview-el');
-    imgEl.src = e.target.result;
-    document.getElementById('img-preview-wrap').style.display = '';
-    document.getElementById('extract-btn').disabled = false;
-  };
-  reader.readAsDataURL(file);
-}
-
-async function extractFromImage() {
-  const apiKey = document.getElementById('api-key-input').value.trim();
-  if (!apiKey) { setStatus('img', 'Enter your Claude API key first.', true); return; }
-  if (!imgBase64) { setStatus('img', 'Upload an image first.', true); return; }
-  saveApiKey(apiKey);
-
-  const btn = document.getElementById('extract-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Extracting…';
-  setStatus('img', '');
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'anthropic-dangerous-direct-browser-calls': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: imgMime, data: imgBase64 } },
-            { type: 'text', text: `Extract every transaction from this bank statement, receipt, or transaction list image.
-Return ONLY a valid JSON array. Each item: {"date":"YYYY-MM-DD","description":"merchant or description","amount":12.50,"type":"expense" or "income"}
-Rules:
-- Purchases/payments/debits → "expense". Deposits/credits/refunds → "income".
-- Amount must be a positive number.
-- Date in YYYY-MM-DD. If year unknown use current year.
-- If no transactions found, return [].
-Return ONLY the JSON array, no other text.` }
-          ]
-        }]
-      })
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(()=>({}));
-      throw new Error(err?.error?.message || `API error ${res.status}`);
-    }
-
-    const data = await res.json();
-    const text = data.content?.[0]?.text || '';
-    const match = text.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('Could not find JSON in response.');
-    const parsed = JSON.parse(match[0]);
-    if (!Array.isArray(parsed) || !parsed.length) { setStatus('img','No transactions found in image.',true); return; }
-
-    importedImgRows = parsed.map(r => ({
-      date: r.date || today(),
-      description: r.description || '',
-      amount: Math.abs(parseFloat(r.amount) || 0),
-      type: r.type === 'income' ? 'income' : 'expense',
-      category: guessCategory(r.description),
-      include: true
-    })).filter(r => r.amount > 0);
-
-    if (!importedImgRows.length) { setStatus('img','No valid transactions extracted.',true); return; }
-    renderPreviewTable('img', importedImgRows);
-
-  } catch(e) {
-    setStatus('img', 'Error: ' + e.message, true);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Extract with AI';
-  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
