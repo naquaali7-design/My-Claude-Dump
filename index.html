@@ -61,18 +61,24 @@
     .tx-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
     .tx-icon.expense   { background: rgba(239,68,68,.15); }
     .tx-icon.income    { background: rgba(34,197,94,.15); }
-    .tx-icon.loan_from { background: rgba(249,115,22,.15); }
-    .tx-icon.loan_to   { background: rgba(168,85,247,.15); }
+    .tx-icon.loan_from         { background: rgba(249,115,22,.15); }
+    .tx-icon.loan_to           { background: rgba(168,85,247,.15); }
+    .tx-icon.loan_from_return  { background: rgba(249,115,22,.10); }
+    .tx-icon.loan_to_return    { background: rgba(168,85,247,.10); }
     .tx-info { flex: 1; min-width: 0; }
     .tx-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.95rem; }
     .tx-date { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
     .tx-amount { font-weight: 600; flex-shrink: 0; font-size: 0.95rem; }
     .tx-amount.expense   { color: var(--red); }
     .tx-amount.income    { color: var(--green); }
-    .tx-amount.loan_from { color: var(--orange); }
-    .tx-amount.loan_to   { color: var(--purple); }
+    .tx-amount.loan_from        { color: var(--orange); }
+    .tx-amount.loan_to          { color: var(--purple); }
+    .tx-amount.loan_from_return { color: var(--orange); opacity:.7; }
+    .tx-amount.loan_to_return   { color: var(--purple); opacity:.7; }
     .tx-del { background: none; border: none; color: var(--border); cursor: pointer; font-size: 1.3rem; line-height: 1; padding: 0.2rem 0.4rem; border-radius: 0.3rem; }
     .tx-del:hover { color: var(--red); }
+    .tx-return { background: none; border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.45rem; border-radius: 0.4rem; white-space: nowrap; }
+    .tx-return:hover { border-color: var(--green); color: var(--green); }
     .empty { text-align: center; color: var(--muted); padding: 3rem 1rem; font-size: 0.9rem; }
 
     /* ── Modals ── */
@@ -311,6 +317,30 @@
   </div>
 </div>
 
+<!-- Return Loan Modal -->
+<div class="overlay" id="return-overlay" onclick="returnOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title" id="return-title">Return Loan</div>
+    <p id="return-desc" style="font-size:.875rem;color:var(--muted);margin-bottom:1rem"></p>
+    <div class="form-group">
+      <label>Amount Returned</label>
+      <input type="number" id="return-amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="return-date">
+    </div>
+    <div class="form-group">
+      <label>Note (optional)</label>
+      <input type="text" id="return-note" placeholder="e.g. partial repayment">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeReturnModal()">Cancel</button>
+      <button class="btn btn-income" id="return-submit" onclick="saveReturn()">Record Return</button>
+    </div>
+  </div>
+</div>
+
 <!-- Import Modal -->
 <div class="overlay" id="import-overlay" onclick="importOverlayClick(event)">
   <div class="modal import-modal">
@@ -396,7 +426,8 @@ function guessCategory(desc) {
 
 function load() { return JSON.parse(localStorage.getItem('budget-tx') || '[]'); }
 function persist(txs) { localStorage.setItem('budget-tx', JSON.stringify(txs)); }
-function isLoan(t) { return t === 'loan_from' || t === 'loan_to'; }
+function isLoan(t) { return t==='loan_from'||t==='loan_to'||t==='loan_from_return'||t==='loan_to_return'; }
+function isOriginalLoan(t) { return t==='loan_from'||t==='loan_to'; }
 
 // ── Budget View ───────────────────────────────────────────────────────────────
 let currentFilter = 'all';
@@ -405,9 +436,11 @@ function render() {
   const txs = load();
   const income    = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const expenses  = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-  const loanIn    = txs.filter(t=>t.type==='loan_from').reduce((s,t)=>s+t.amount,0);
-  const loanOut   = txs.filter(t=>t.type==='loan_to').reduce((s,t)=>s+t.amount,0);
-  const bal = income - expenses + loanIn - loanOut;
+  const loanIn       = txs.filter(t=>t.type==='loan_from').reduce((s,t)=>s+t.amount,0);
+  const loanOut      = txs.filter(t=>t.type==='loan_to').reduce((s,t)=>s+t.amount,0);
+  const loanReturnOut= txs.filter(t=>t.type==='loan_from_return').reduce((s,t)=>s+t.amount,0);
+  const loanReturnIn = txs.filter(t=>t.type==='loan_to_return').reduce((s,t)=>s+t.amount,0);
+  const bal = income - expenses + loanIn - loanOut - loanReturnOut + loanReturnIn;
   const balEl = document.getElementById('balance-display');
   balEl.textContent = (bal<0?'-':'') + fmt(Math.abs(bal));
   balEl.className = 'balance-amount ' + (bal>=0?'pos':'neg');
@@ -423,33 +456,67 @@ function render() {
   if (!visible.length) { el.innerHTML='<div class="empty">No transactions yet</div>'; return; }
   el.innerHTML = visible.map(t => {
     const loan = isLoan(t.type);
-    const label = loan ? (t.type==='loan_from'?'From ':'To ')+esc(t.person||'?') : esc(t.category);
-    const sign  = (t.type==='expense'||t.type==='loan_to') ? '−' : '+';
-    const badge = t.type==='loan_from' ? `<span class="pill pill-orange">You owe</span>`
-                : t.type==='loan_to'   ? `<span class="pill pill-purple">Owed to you</span>` : '';
+    let label, sign, badge, icon;
+    if (t.type==='loan_from') {
+      label=`From ${esc(t.person||'?')}`; sign='+'; icon='📥';
+      badge=`<span class="pill pill-orange">You owe</span>`;
+    } else if (t.type==='loan_to') {
+      label=`To ${esc(t.person||'?')}`; sign='−'; icon='📤';
+      badge=`<span class="pill pill-purple">Owed to you</span>`;
+    } else if (t.type==='loan_from_return') {
+      label=`Paid back to ${esc(t.person||'?')}`; sign='−'; icon='↩️'; badge='';
+    } else if (t.type==='loan_to_return') {
+      label=`Received back from ${esc(t.person||'?')}`; sign='+'; icon='↩️'; badge='';
+    } else {
+      label=esc(t.category); sign=(t.type==='expense')?'−':'+'; icon=ICONS[t.category]||'📋'; badge='';
+    }
+    const returnBtn = isOriginalLoan(t.type)
+      ? `<button class="tx-return" onclick="openReturnModal('${t.id}')">↩ Return</button>` : '';
     return `<div class="transaction">
-      <div class="tx-icon ${t.type}">${loan?ICONS[t.type]:(ICONS[t.category]||'📋')}</div>
+      <div class="tx-icon ${t.type}">${icon}</div>
       <div class="tx-info">
         <div class="tx-name">${label}${t.note?' · '+esc(t.note):''}${badge?' '+badge:''}</div>
         <div class="tx-date">${fmtDate(t.date)}</div>
       </div>
       <div class="tx-amount ${t.type}">${sign}${fmt(t.amount)}</div>
+      ${returnBtn}
       <button class="tx-del" onclick="del('${t.id}')">×</button>
     </div>`;
   }).join('');
 }
 
 function renderLoansSummary(txs) {
-  const from = txs.filter(t=>t.type==='loan_from');
-  const to   = txs.filter(t=>t.type==='loan_to');
-  const el   = document.getElementById('loans-summary');
-  if (!from.length && !to.length) { el.classList.remove('visible'); return; }
+  const el = document.getElementById('loans-summary');
+  // Net per person for each direction
+  const netFrom = {}, netTo = {};
+  txs.forEach(t => {
+    const n = t.person||'Unknown';
+    if (t.type==='loan_from')        netFrom[n] = (netFrom[n]||0) + t.amount;
+    if (t.type==='loan_from_return') netFrom[n] = (netFrom[n]||0) - t.amount;
+    if (t.type==='loan_to')          netTo[n]   = (netTo[n]||0)   + t.amount;
+    if (t.type==='loan_to_return')   netTo[n]   = (netTo[n]||0)   - t.amount;
+  });
+  // Only show if at least one original loan exists
+  const hasFrom = txs.some(t=>t.type==='loan_from');
+  const hasTo   = txs.some(t=>t.type==='loan_to');
+  if (!hasFrom && !hasTo) { el.classList.remove('visible'); return; }
   el.classList.add('visible');
-  const grp = arr => arr.reduce((m,t)=>{ const n=t.person||'Unknown'; m[n]=(m[n]||0)+t.amount; return m; },{});
-  document.getElementById('loans-from-rows').innerHTML = Object.entries(grp(from)).map(([n,s])=>
-    `<div class="loans-summary-row"><span>📥 You owe <strong>${esc(n)}</strong></span><span style="color:var(--orange);font-weight:600">${fmt(s)}</span></div>`).join('');
-  document.getElementById('loans-to-rows').innerHTML = Object.entries(grp(to)).map(([n,s])=>
-    `<div class="loans-summary-row"><span>📤 <strong>${esc(n)}</strong> owes you</span><span style="color:var(--purple);font-weight:600">${fmt(s)}</span></div>`).join('');
+  const rowFrom = Object.entries(netFrom).map(([n,net]) => {
+    const settled = net <= 0;
+    return `<div class="loans-summary-row">
+      <span>📥 You owe <strong>${esc(n)}</strong></span>
+      <span style="color:${settled?'var(--green)':'var(--orange)'};font-weight:600">${settled?'✓ Settled':fmt(net)}</span>
+    </div>`;
+  }).join('');
+  const rowTo = Object.entries(netTo).map(([n,net]) => {
+    const settled = net <= 0;
+    return `<div class="loans-summary-row">
+      <span>📤 <strong>${esc(n)}</strong> owes you</span>
+      <span style="color:${settled?'var(--green)':'var(--purple)'};font-weight:600">${settled?'✓ Settled':fmt(net)}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('loans-from-rows').innerHTML = rowFrom;
+  document.getElementById('loans-to-rows').innerHTML   = rowTo;
 }
 
 function del(id) {
@@ -745,6 +812,42 @@ function renderTop5(txs) {
       </div>
       <div style="color:var(--red);font-weight:600;flex-shrink:0">−${fmt(t.amount)}</div>
     </div>`).join('');
+}
+
+// ── Return Loan Modal ─────────────────────────────────────────────────────────
+let returnSourceId = null;
+
+function openReturnModal(txId) {
+  const tx = load().find(t=>t.id===txId);
+  if (!tx) return;
+  returnSourceId = txId;
+  const isFrom = tx.type === 'loan_from';
+  document.getElementById('return-title').textContent = isFrom ? 'Paying Back a Loan' : 'Recording Money Received';
+  document.getElementById('return-desc').textContent  = isFrom
+    ? `Recording a repayment to ${tx.person}. This will subtract from your balance.`
+    : `Recording a repayment received from ${tx.person}. This will add to your balance.`;
+  document.getElementById('return-submit').className = isFrom ? 'btn btn-expense' : 'btn btn-income';
+  document.getElementById('return-amount').value = tx.amount;
+  document.getElementById('return-date').value   = today();
+  document.getElementById('return-note').value   = '';
+  document.getElementById('return-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('return-amount').focus(),50);
+}
+function closeReturnModal() { document.getElementById('return-overlay').classList.remove('open'); returnSourceId=null; }
+function returnOverlayClick(e) { if(e.target===document.getElementById('return-overlay')) closeReturnModal(); }
+
+function saveReturn() {
+  const amount = parseFloat(document.getElementById('return-amount').value);
+  const date   = document.getElementById('return-date').value;
+  const note   = document.getElementById('return-note').value.trim();
+  if (!amount||amount<=0) { alert('Enter a valid amount.'); return; }
+  if (!date) { alert('Pick a date.'); return; }
+  const source = load().find(t=>t.id===returnSourceId);
+  if (!source) return;
+  const returnType = source.type==='loan_from' ? 'loan_from_return' : 'loan_to_return';
+  const txs = load();
+  txs.push({ id:uid(), type:returnType, amount, person:source.person, note, date });
+  persist(txs); closeReturnModal(); render();
 }
 
 // ── Import Modal ──────────────────────────────────────────────────────────────
