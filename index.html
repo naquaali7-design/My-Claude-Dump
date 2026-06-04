@@ -174,6 +174,7 @@
   <div class="header">
     <h1>💰 Budget</h1>
     <div class="header-btns">
+      <span id="sync-status" style="font-size:.72rem;color:var(--muted);padding:.35rem .55rem">● Connecting</span>
       <button class="btn-ghost" onclick="openImport()">⬆ Import</button>
       <button class="btn-ghost" onclick="clearAll()">Clear</button>
     </div>
@@ -381,8 +382,58 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+// ── Firebase ──────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyD-e10gBNtOIjnhpw_m3ZNkMG5HW4LpVuE",
+  authDomain: "my-budget-cf6cb.firebaseapp.com",
+  projectId: "my-budget-cf6cb",
+  storageBucket: "my-budget-cf6cb.firebasestorage.app",
+  messagingSenderId: "728975705760",
+  appId: "1:728975705760:web:16c7973c6866333815ebc5"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+const txsRef = db.collection('transactions');
+
+// ── In-memory state (kept in sync by onSnapshot) ──────────────────────────────
+let txs = [];
+function load() { return txs; }
+
+// ── Sync status indicator ─────────────────────────────────────────────────────
+function setSyncStatus(state) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  if (state === 'synced')  { el.textContent = '● Synced';       el.style.color = 'var(--green)'; }
+  else if (state === 'offline') { el.textContent = '● Offline'; el.style.color = 'var(--orange)'; }
+  else                     { el.textContent = '● Connecting…';  el.style.color = 'var(--muted)'; }
+}
+window.addEventListener('offline', () => setSyncStatus('offline'));
+window.addEventListener('online',  () => setSyncStatus('synced'));
+
+// ── Migrate any existing localStorage data into Firestore (one-time) ──────────
+(function migrateLegacy() {
+  const legacy = JSON.parse(localStorage.getItem('budget-tx') || '[]');
+  if (!legacy.length) return;
+  const batch = db.batch();
+  legacy.forEach(tx => batch.set(txsRef.doc(tx.id), tx));
+  batch.commit().then(() => localStorage.removeItem('budget-tx')).catch(()=>{});
+})();
+
+// ── Real-time listener ────────────────────────────────────────────────────────
+txsRef.onSnapshot(snap => {
+  txs = snap.docs.map(d => d.data());
+  setSyncStatus('synced');
+  render();
+  if (document.getElementById('insights-view').style.display !== 'none') {
+    populatePeriodDrops(); renderInsights();
+  }
+}, () => setSyncStatus('offline'));
+
 // ── Data ──────────────────────────────────────────────────────────────────────
 const CATS = {
   expense: ['Food & Dining','Groceries','Fuel','Transport','Clothes','Housing',
@@ -424,8 +475,6 @@ function guessCategory(desc) {
   return 'Other';
 }
 
-function load() { return JSON.parse(localStorage.getItem('budget-tx') || '[]'); }
-function persist(txs) { localStorage.setItem('budget-tx', JSON.stringify(txs)); }
 function isLoan(t) { return t==='loan_from'||t==='loan_to'||t==='loan_from_return'||t==='loan_to_return'; }
 function isOriginalLoan(t) { return t==='loan_from'||t==='loan_to'; }
 
@@ -521,11 +570,13 @@ function renderLoansSummary(txs) {
 
 function del(id) {
   if (!confirm('Delete this transaction?')) return;
-  persist(load().filter(t=>t.id!==id)); render();
+  txsRef.doc(id).delete().catch(err => console.error(err));
 }
 function clearAll() {
   if (!confirm('Delete ALL transactions?')) return;
-  localStorage.removeItem('budget-tx'); render();
+  const batch = db.batch();
+  txs.forEach(tx => batch.delete(txsRef.doc(tx.id)));
+  batch.commit().catch(err => console.error(err));
 }
 function setFilter(f, btn) {
   currentFilter = f;
@@ -566,8 +617,8 @@ function save() {
     if (!person) { alert("Enter the person's name."); return; }
     tx.person = person;
   } else { tx.category = document.getElementById('tx-category').value; }
-  const txs = load(); txs.push(tx); persist(txs);
-  closeModal(); render();
+  txsRef.doc(tx.id).set(tx).catch(err => console.error(err));
+  closeModal();
 }
 
 // ── View switching ────────────────────────────────────────────────────────────
@@ -842,12 +893,12 @@ function saveReturn() {
   const note   = document.getElementById('return-note').value.trim();
   if (!amount||amount<=0) { alert('Enter a valid amount.'); return; }
   if (!date) { alert('Pick a date.'); return; }
-  const source = load().find(t=>t.id===returnSourceId);
+  const source = txs.find(t=>t.id===returnSourceId);
   if (!source) return;
   const returnType = source.type==='loan_from' ? 'loan_from_return' : 'loan_to_return';
-  const txs = load();
-  txs.push({ id:uid(), type:returnType, amount, person:source.person, note, date });
-  persist(txs); closeReturnModal(); render();
+  const tx = { id:uid(), type:returnType, amount, person:source.person, note, date };
+  txsRef.doc(tx.id).set(tx).catch(err => console.error(err));
+  closeReturnModal();
 }
 
 // ── Import Modal ──────────────────────────────────────────────────────────────
@@ -961,12 +1012,13 @@ function updateCSVCount(){
   const n=importedCSVRows.filter(r=>r.include).length;
   document.getElementById('csv-count').textContent=`${n} of ${importedCSVRows.length} transactions selected`;
 }
-function importCSV() {
+async function importCSV() {
   const sel=importedCSVRows.filter(r=>r.include);
   if(!sel.length){setCSVStatus('No rows selected.',true);return;}
-  const txs=load();
-  sel.forEach(r=>txs.push({id:uid(),type:r.type,amount:r.amount,category:r.category,note:r.description,date:r.date}));
-  persist(txs); render(); closeImport();
+  const batch=db.batch();
+  sel.forEach(r=>{const id=uid();batch.set(txsRef.doc(id),{id,type:r.type,amount:r.amount,category:r.category,note:r.description,date:r.date});});
+  try { await batch.commit(); closeImport(); }
+  catch(err) { setCSVStatus('Import failed: '+err.message,true); }
 }
 function setCSVStatus(msg,err=false){
   const el=document.getElementById('csv-status');
@@ -980,7 +1032,6 @@ function fmtDate(d) { return new Date(d+'T12:00:00').toLocaleDateString('en-US',
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 
-render();
 </script>
 </body>
 </html>
