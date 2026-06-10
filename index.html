@@ -154,6 +154,30 @@
     .status-bar.err { color: var(--red); }
     .btn-full { width: 100%; margin-top: 0.75rem; padding: 0.8rem; border: none; border-radius: 0.75rem; font-size: 1rem; font-weight: 600; cursor: pointer; background: var(--blue); color: #fff; }
 
+    /* ── Groups & Drag-to-group ── */
+    .drag-handle { color: var(--border); cursor: grab; font-size: 1rem; padding: 0.15rem 0.25rem 0.15rem 0; flex-shrink: 0; touch-action: none; user-select: none; }
+    .drag-handle:active { cursor: grabbing; }
+    .transaction { position: relative; }
+    .transaction.dragging { opacity: 0.35; }
+    .transaction.drop-hover { outline: 2px solid var(--blue); background: rgba(59,130,246,.1) !important; }
+    .group-block { margin-bottom: 0.5rem; }
+    .group-header { display: flex; align-items: center; gap: 0.75rem; background: rgba(59,130,246,.07); border: 1px solid rgba(59,130,246,.18); border-radius: 0.75rem; padding: 0.875rem; cursor: pointer; }
+    .group-header:hover { background: rgba(59,130,246,.12); }
+    .group-header.group-drop-hover { background: rgba(59,130,246,.2); border-color: var(--blue); }
+    .group-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(59,130,246,.15); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+    .group-info { flex: 1; min-width: 0; }
+    .group-name { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .group-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
+    .group-total { font-weight: 700; font-size: 0.95rem; flex-shrink: 0; }
+    .group-actions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+    .group-chevron { color: var(--muted); font-size: 0.8rem; }
+    .btn-group-action { background: none; border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-size: 0.7rem; padding: 0.2rem 0.45rem; border-radius: 0.4rem; }
+    .btn-group-action:hover { border-color: var(--red); color: var(--red); }
+    .group-txs { padding: 0.3rem 0 0 0; }
+    .group-txs .transaction { border-radius: 0.5rem; margin-bottom: 0.3rem; border-left: 3px solid rgba(59,130,246,.3); }
+    .btn-leave-group { background: none; border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 0.4rem; white-space: nowrap; }
+    .btn-leave-group:hover { border-color: var(--orange); color: var(--orange); }
+
     /* ── Print / PDF ── */
     @media print {
       body { background: #fff; color: #0f172a; }
@@ -398,10 +422,13 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-const txsRef = db.collection('transactions');
+const txsRef    = db.collection('transactions');
+const groupsRef = db.collection('groups');
 
-// ── In-memory state (kept in sync by onSnapshot) ──────────────────────────────
-let txs = [];
+// ── In-memory state ───────────────────────────────────────────────────────────
+let txs    = [];
+let groups = {};
+const expandedGroups = new Set();
 function load() { return txs; }
 
 // ── Sync status indicator ─────────────────────────────────────────────────────
@@ -424,14 +451,23 @@ window.addEventListener('online',  () => setSyncStatus('synced'));
   batch.commit().then(() => localStorage.removeItem('budget-tx')).catch(()=>{});
 })();
 
-// ── Real-time listener ────────────────────────────────────────────────────────
-txsRef.onSnapshot(snap => {
-  txs = snap.docs.map(d => d.data());
-  setSyncStatus('synced');
-  render();
+// ── Real-time listeners (both must fire before first render) ─────────────────
+let _txsReady = false, _grpsReady = false;
+function _onReady() {
+  if (!_txsReady || !_grpsReady) return;
+  setSyncStatus('synced'); render();
   if (document.getElementById('insights-view').style.display !== 'none') {
     populatePeriodDrops(); renderInsights();
   }
+}
+txsRef.onSnapshot(snap => {
+  txs = snap.docs.map(d => d.data());
+  _txsReady = true; _onReady();
+}, () => setSyncStatus('offline'));
+groupsRef.onSnapshot(snap => {
+  groups = {};
+  snap.docs.forEach(d => { groups[d.id] = d.data(); });
+  _grpsReady = true; _onReady();
 }, () => setSyncStatus('offline'));
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -482,56 +518,114 @@ function isOriginalLoan(t) { return t==='loan_from'||t==='loan_to'; }
 let currentFilter = 'all';
 
 function render() {
-  const txs = load();
-  const income    = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const expenses  = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-  const loanIn       = txs.filter(t=>t.type==='loan_from').reduce((s,t)=>s+t.amount,0);
-  const loanOut      = txs.filter(t=>t.type==='loan_to').reduce((s,t)=>s+t.amount,0);
-  const loanReturnOut= txs.filter(t=>t.type==='loan_from_return').reduce((s,t)=>s+t.amount,0);
-  const loanReturnIn = txs.filter(t=>t.type==='loan_to_return').reduce((s,t)=>s+t.amount,0);
+  const all = load();
+  const income     = all.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expenses   = all.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const loanIn        = all.filter(t=>t.type==='loan_from').reduce((s,t)=>s+t.amount,0);
+  const loanOut       = all.filter(t=>t.type==='loan_to').reduce((s,t)=>s+t.amount,0);
+  const loanReturnOut = all.filter(t=>t.type==='loan_from_return').reduce((s,t)=>s+t.amount,0);
+  const loanReturnIn  = all.filter(t=>t.type==='loan_to_return').reduce((s,t)=>s+t.amount,0);
   const bal = income - expenses + loanIn - loanOut - loanReturnOut + loanReturnIn;
   const balEl = document.getElementById('balance-display');
   balEl.textContent = (bal<0?'-':'') + fmt(Math.abs(bal));
   balEl.className = 'balance-amount ' + (bal>=0?'pos':'neg');
   document.getElementById('income-display').textContent   = fmt(income);
   document.getElementById('expenses-display').textContent = fmt(expenses);
-  renderLoansSummary(txs);
+  renderLoansSummary(all);
 
-  const visible = currentFilter==='loans' ? txs.filter(t=>isLoan(t.type))
-    : currentFilter==='all' ? txs : txs.filter(t=>t.type===currentFilter);
-  visible.sort((a,b)=>b.date.localeCompare(a.date));
+  const visible = currentFilter==='loans' ? all.filter(t=>isLoan(t.type))
+    : currentFilter==='all' ? all : all.filter(t=>t.type===currentFilter);
 
   const el = document.getElementById('tx-list');
   if (!visible.length) { el.innerHTML='<div class="empty">No transactions yet</div>'; return; }
-  el.innerHTML = visible.map(t => {
-    const loan = isLoan(t.type);
-    let label, sign, badge, icon;
-    if (t.type==='loan_from') {
-      label=`From ${esc(t.person||'?')}`; sign='+'; icon='📥';
-      badge=`<span class="pill pill-orange">You owe</span>`;
-    } else if (t.type==='loan_to') {
-      label=`To ${esc(t.person||'?')}`; sign='−'; icon='📤';
-      badge=`<span class="pill pill-purple">Owed to you</span>`;
-    } else if (t.type==='loan_from_return') {
-      label=`Paid back to ${esc(t.person||'?')}`; sign='−'; icon='↩️'; badge='';
-    } else if (t.type==='loan_to_return') {
-      label=`Received back from ${esc(t.person||'?')}`; sign='+'; icon='↩️'; badge='';
-    } else {
-      label=esc(t.category); sign=(t.type==='expense')?'−':'+'; icon=ICONS[t.category]||'📋'; badge='';
-    }
-    const returnBtn = isOriginalLoan(t.type)
-      ? `<button class="tx-return" onclick="openReturnModal('${t.id}')">↩ Return</button>` : '';
-    return `<div class="transaction">
-      <div class="tx-icon ${t.type}">${icon}</div>
-      <div class="tx-info">
-        <div class="tx-name">${label}${t.note?' · '+esc(t.note):''}${badge?' '+badge:''}</div>
-        <div class="tx-date">${fmtDate(t.date)}</div>
+
+  // Partition into ungrouped and per-group buckets
+  const ungrouped = visible.filter(t=>!t.groupId);
+  const groupMap  = {};
+  visible.filter(t=>t.groupId).forEach(t=>{
+    (groupMap[t.groupId] = groupMap[t.groupId]||[]).push(t);
+  });
+
+  // Build sorted render list (groups represented by their newest tx date)
+  const items = [];
+  ungrouped.forEach(t=>items.push({kind:'tx', data:t, date:t.date}));
+  Object.entries(groupMap).forEach(([gid,gtxs])=>{
+    const maxDate = gtxs.reduce((m,t)=>t.date>m?t.date:m,'');
+    items.push({kind:'group', groupId:gid, txs:gtxs, date:maxDate});
+  });
+  items.sort((a,b)=>b.date.localeCompare(a.date));
+
+  el.innerHTML = items.map(item=>
+    item.kind==='tx' ? txRow(item.data,false) : groupBlock(item.groupId,item.txs)
+  ).join('');
+}
+
+function txRow(t, inGroup) {
+  let label, sign, badge, icon;
+  if (t.type==='loan_from') {
+    label=`From ${esc(t.person||'?')}`; sign='+'; icon='📥';
+    badge=`<span class="pill pill-orange">You owe</span>`;
+  } else if (t.type==='loan_to') {
+    label=`To ${esc(t.person||'?')}`; sign='−'; icon='📤';
+    badge=`<span class="pill pill-purple">Owed to you</span>`;
+  } else if (t.type==='loan_from_return') {
+    label=`Paid back to ${esc(t.person||'?')}`; sign='−'; icon='↩️'; badge='';
+  } else if (t.type==='loan_to_return') {
+    label=`Received back from ${esc(t.person||'?')}`; sign='+'; icon='↩️'; badge='';
+  } else {
+    label=esc(t.category); sign=(t.type==='expense')?'−':'+'; icon=ICONS[t.category]||'📋'; badge='';
+  }
+  const returnBtn = isOriginalLoan(t.type)
+    ? `<button class="tx-return" onclick="openReturnModal('${t.id}');event.stopPropagation()">↩ Return</button>` : '';
+  const leaveBtn = inGroup
+    ? `<button class="btn-leave-group" onclick="removeFromGroup('${t.id}');event.stopPropagation()" title="Remove from group">↗</button>` : '';
+  return `<div class="transaction" data-tx-id="${t.id}"
+    draggable="true"
+    ondragstart="dragStart(event,'${t.id}')"
+    ondragover="dragOver(event)"
+    ondragleave="dragLeave(event)"
+    ondrop="drop(event,'${t.id}')"
+    ondragend="dragEnd(event)">
+    <div class="drag-handle"
+      ontouchstart="touchDragStart(event,'${t.id}')"
+      ontouchmove="touchDragMove(event)"
+      ontouchend="touchDragEnd(event)">⠿</div>
+    <div class="tx-icon ${t.type}">${icon}</div>
+    <div class="tx-info">
+      <div class="tx-name">${label}${t.note?' · '+esc(t.note):''}${badge?' '+badge:''}</div>
+      <div class="tx-date">${fmtDate(t.date)}</div>
+    </div>
+    <div class="tx-amount ${t.type}">${sign}${fmt(t.amount)}</div>
+    ${returnBtn}${leaveBtn}
+    <button class="tx-del" onclick="del('${t.id}');event.stopPropagation()">×</button>
+  </div>`;
+}
+
+function groupBlock(groupId, gtxs) {
+  const g = groups[groupId] || {id:groupId, name:'Group'};
+  const expanded = expandedGroups.has(groupId);
+  const expTotal = gtxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const allExp   = gtxs.length>0 && gtxs.every(t=>t.type==='expense');
+  const sorted   = [...gtxs].sort((a,b)=>b.date.localeCompare(a.date));
+  return `<div class="group-block" data-group-id="${groupId}">
+    <div class="group-header"
+      onclick="toggleGroup('${groupId}')"
+      ondragover="groupDragOver(event)"
+      ondragleave="groupDragLeave(event)"
+      ondrop="groupDrop(event,'${groupId}')">
+      <div class="group-icon">📁</div>
+      <div class="group-info">
+        <div class="group-name" ondblclick="renameGroup('${groupId}');event.stopPropagation()">${esc(g.name)}</div>
+        <div class="group-meta">${gtxs.length} item${gtxs.length!==1?'s':''} · double-tap name to rename</div>
       </div>
-      <div class="tx-amount ${t.type}">${sign}${fmt(t.amount)}</div>
-      ${returnBtn}
-      <button class="tx-del" onclick="del('${t.id}')">×</button>
-    </div>`;
-  }).join('');
+      <div class="group-total neg">${allExp?'−'+fmt(expTotal):gtxs.length+' txs'}</div>
+      <div class="group-actions">
+        <button class="btn-group-action" onclick="deleteGroup('${groupId}');event.stopPropagation()" title="Ungroup">↗</button>
+        <span class="group-chevron">${expanded?'▲':'▼'}</span>
+      </div>
+    </div>
+    ${expanded?`<div class="group-txs">${sorted.map(t=>txRow(t,true)).join('')}</div>`:''}
+  </div>`;
 }
 
 function renderLoansSummary(txs) {
@@ -1023,6 +1117,134 @@ async function importCSV() {
 function setCSVStatus(msg,err=false){
   const el=document.getElementById('csv-status');
   el.textContent=msg; el.className='status-bar'+(err?' err':'');
+}
+
+// ── Group management ─────────────────────────────────────────────────────────
+function toggleGroup(groupId) {
+  expandedGroups.has(groupId) ? expandedGroups.delete(groupId) : expandedGroups.add(groupId);
+  render();
+}
+function renameGroup(groupId) {
+  const cur = groups[groupId]?.name || 'Group';
+  const name = prompt('Rename group:', cur);
+  if (name && name.trim()) groupsRef.doc(groupId).update({name: name.trim()});
+}
+function deleteGroup(groupId) {
+  if (!confirm('Ungroup all transactions in this group?')) return;
+  const batch = db.batch();
+  txs.filter(t=>t.groupId===groupId).forEach(t=>{
+    const copy={...t}; delete copy.groupId; batch.set(txsRef.doc(t.id), copy);
+  });
+  batch.delete(groupsRef.doc(groupId));
+  batch.commit();
+  expandedGroups.delete(groupId);
+}
+function removeFromGroup(txId) {
+  const tx = txs.find(t=>t.id===txId); if (!tx) return;
+  const copy={...tx}; delete copy.groupId; txsRef.doc(txId).set(copy);
+}
+async function mergeIntoGroup(srcId, tgtId) {
+  const src = txs.find(t=>t.id===srcId), tgt = txs.find(t=>t.id===tgtId);
+  if (!src||!tgt||srcId===tgtId) return;
+  if (src.groupId && src.groupId===tgt.groupId) return;
+  let gid;
+  if (tgt.groupId) {
+    gid = tgt.groupId;
+  } else {
+    gid = 'grp_'+uid();
+    const label = new Date(tgt.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    await groupsRef.doc(gid).set({id:gid, name:`Group ${label}`});
+    const tc={...tgt}; tc.groupId=gid; await txsRef.doc(tgtId).set(tc);
+  }
+  const sc={...src}; sc.groupId=gid; await txsRef.doc(srcId).set(sc);
+  expandedGroups.add(gid);
+}
+async function addToGroup(txId, groupId) {
+  const tx=txs.find(t=>t.id===txId); if (!tx) return;
+  const copy={...tx}; copy.groupId=groupId; await txsRef.doc(txId).set(copy);
+  expandedGroups.add(groupId);
+}
+
+// ── Desktop Drag & Drop ───────────────────────────────────────────────────────
+let desktopDragTxId = null;
+function dragStart(e, txId) {
+  desktopDragTxId = txId;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', txId);
+  setTimeout(()=>document.querySelector(`[data-tx-id="${txId}"]`)?.classList.add('dragging'), 0);
+}
+function dragEnd(e) {
+  document.querySelectorAll('.dragging,.drop-hover').forEach(el=>el.classList.remove('dragging','drop-hover'));
+  desktopDragTxId = null;
+}
+function dragOver(e) {
+  e.preventDefault(); e.stopPropagation();
+  const row = e.currentTarget;
+  if (row.dataset.txId !== desktopDragTxId) {
+    document.querySelectorAll('.drop-hover').forEach(el=>el.classList.remove('drop-hover'));
+    row.classList.add('drop-hover');
+  }
+}
+function dragLeave(e) { e.currentTarget.classList.remove('drop-hover'); }
+function drop(e, targetTxId) {
+  e.preventDefault(); e.stopPropagation();
+  e.currentTarget.classList.remove('drop-hover');
+  if (desktopDragTxId && desktopDragTxId!==targetTxId) mergeIntoGroup(desktopDragTxId, targetTxId);
+  desktopDragTxId = null;
+}
+function groupDragOver(e) {
+  e.preventDefault(); e.stopPropagation();
+  e.currentTarget.classList.add('group-drop-hover');
+}
+function groupDragLeave(e) { e.currentTarget.classList.remove('group-drop-hover'); }
+function groupDrop(e, groupId) {
+  e.preventDefault(); e.stopPropagation();
+  e.currentTarget.classList.remove('group-drop-hover');
+  if (desktopDragTxId) { addToGroup(desktopDragTxId, groupId); desktopDragTxId=null; }
+}
+
+// ── Touch Drag (mobile) ───────────────────────────────────────────────────────
+let touchDrag = null;
+function touchDragStart(e, txId) {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const el = e.currentTarget.closest('.transaction');
+  const rect = el.getBoundingClientRect();
+  const ghost = el.cloneNode(true);
+  ghost.style.cssText = `position:fixed;top:${rect.top}px;left:${rect.left}px;width:${rect.width}px;z-index:9999;pointer-events:none;opacity:0.85;box-shadow:0 8px 28px rgba(0,0,0,.5);border-radius:.75rem;transition:none;`;
+  document.body.appendChild(ghost);
+  el.classList.add('dragging');
+  touchDrag = {txId, ghost, el, ox:touch.clientX-rect.left, oy:touch.clientY-rect.top, targetTxId:null, targetGroupId:null};
+}
+function touchDragMove(e) {
+  if (!touchDrag) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  touchDrag.ghost.style.top  = (touch.clientY - touchDrag.oy)+'px';
+  touchDrag.ghost.style.left = (touch.clientX - touchDrag.ox)+'px';
+  touchDrag.ghost.style.display='none';
+  const under = document.elementFromPoint(touch.clientX, touch.clientY);
+  touchDrag.ghost.style.display='';
+  document.querySelectorAll('.drop-hover,.group-drop-hover').forEach(el=>el.classList.remove('drop-hover','group-drop-hover'));
+  touchDrag.targetTxId=null; touchDrag.targetGroupId=null;
+  const targetRow = under?.closest('.transaction');
+  const targetGH  = under?.closest('.group-header');
+  if (targetRow && targetRow.dataset.txId !== touchDrag.txId) {
+    targetRow.classList.add('drop-hover');
+    touchDrag.targetTxId = targetRow.dataset.txId;
+  } else if (targetGH) {
+    targetGH.classList.add('group-drop-hover');
+    touchDrag.targetGroupId = targetGH.closest('.group-block')?.dataset.groupId;
+  }
+}
+function touchDragEnd(e) {
+  if (!touchDrag) return;
+  document.querySelectorAll('.drop-hover,.group-drop-hover,.dragging').forEach(el=>el.classList.remove('drop-hover','group-drop-hover','dragging'));
+  touchDrag.ghost?.remove();
+  const {txId, targetTxId, targetGroupId} = touchDrag;
+  touchDrag = null;
+  if (targetTxId) mergeIntoGroup(txId, targetTxId);
+  else if (targetGroupId) addToGroup(txId, targetGroupId);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
