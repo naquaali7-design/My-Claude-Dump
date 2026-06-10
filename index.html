@@ -160,23 +160,32 @@
     .transaction { position: relative; }
     .transaction.dragging { opacity: 0.35; }
     .transaction.drop-hover { outline: 2px solid var(--blue); background: rgba(59,130,246,.1) !important; }
-    .group-block { margin-bottom: 0.5rem; }
-    .group-header { display: flex; align-items: center; gap: 0.75rem; background: rgba(59,130,246,.07); border: 1px solid rgba(59,130,246,.18); border-radius: 0.75rem; padding: 0.875rem; cursor: pointer; }
-    .group-header:hover { background: rgba(59,130,246,.12); }
-    .group-header.group-drop-hover { background: rgba(59,130,246,.2); border-color: var(--blue); }
-    .group-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(59,130,246,.15); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+    /* group color is set via --gc CSS custom property on .group-block */
+    .group-block { margin-bottom: 0.5rem; --gc: #3b82f6; --gc-bg: rgba(59,130,246,.09); --gc-border: rgba(59,130,246,.22); --gc-icon: rgba(59,130,246,.15); }
+    .group-header { display: flex; align-items: center; gap: 0.75rem; background: var(--gc-bg); border: 1px solid var(--gc-border); border-radius: 0.75rem; padding: 0.875rem; cursor: pointer; transition: filter .15s; }
+    .group-header:hover { filter: brightness(1.15); }
+    .group-header.group-drop-hover { outline: 2px solid var(--gc); }
+    .group-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--gc-icon); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
     .group-info { flex: 1; min-width: 0; }
+    .group-name-row { display: flex; align-items: center; gap: 0.4rem; }
     .group-name { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .group-label-pill { font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.45rem; border-radius: 99px; white-space: nowrap; flex-shrink: 0; background: var(--gc-icon); color: var(--gc); border: 1px solid var(--gc-border); }
     .group-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
     .group-total { font-weight: 700; font-size: 0.95rem; flex-shrink: 0; }
     .group-actions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
     .group-chevron { color: var(--muted); font-size: 0.8rem; }
-    .btn-group-action { background: none; border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-size: 0.7rem; padding: 0.2rem 0.45rem; border-radius: 0.4rem; }
-    .btn-group-action:hover { border-color: var(--red); color: var(--red); }
-    .group-txs { padding: 0.3rem 0 0 0; }
-    .group-txs .transaction { border-radius: 0.5rem; margin-bottom: 0.3rem; border-left: 3px solid rgba(59,130,246,.3); }
+    .btn-group-action { background: none; border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 0.4rem; }
+    .btn-group-action.edit:hover  { border-color: var(--gc); color: var(--gc); }
+    .btn-group-action.del:hover   { border-color: var(--red); color: var(--red); }
+    .group-txs { margin: 0.3rem 0 0 0.6rem; padding-left: 0.65rem; border-left: 2px solid var(--gc-border); }
+    .group-txs .transaction { border-radius: 0.5rem; margin-bottom: 0.3rem; }
     .btn-leave-group { background: none; border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 0.4rem; white-space: nowrap; }
     .btn-leave-group:hover { border-color: var(--orange); color: var(--orange); }
+    /* Color swatch picker */
+    .swatch-row { display: flex; gap: 0.55rem; flex-wrap: wrap; margin-top: 0.25rem; }
+    .swatch { width: 2rem; height: 2rem; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform .12s; }
+    .swatch:hover { transform: scale(1.18); }
+    .swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.55); transform: scale(1.1); }
 
     /* ── Print / PDF ── */
     @media print {
@@ -406,6 +415,29 @@
   </div>
 </div>
 
+<!-- Group Edit Modal -->
+<div class="overlay" id="group-edit-overlay" onclick="geOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Group</div>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="ge-name" placeholder="e.g. Shopping Spree" maxlength="40">
+    </div>
+    <div class="form-group">
+      <label>Color</label>
+      <div class="swatch-row" id="ge-swatches"></div>
+    </div>
+    <div class="form-group">
+      <label>Label <span style="color:var(--muted);font-size:.7rem;font-weight:400;text-transform:none">(optional short tag)</span></label>
+      <input type="text" id="ge-label" placeholder="e.g. Food Trip, Work, Weekend" maxlength="18">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeGroupEdit()">Cancel</button>
+      <button class="btn btn-income" onclick="saveGroupEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -503,6 +535,17 @@ const KEYWORD_MAP = {
   'Education':        ['school','university','course','tuition','college','udemy','coursera'],
   'Subscriptions':    ['subscription','membership','patreon','premium plan','annual plan'],
 };
+
+const GROUP_PALETTE = [
+  {id:'blue',   hex:'#3b82f6', bg:'rgba(59,130,246,.1)',  border:'rgba(59,130,246,.25)'},
+  {id:'green',  hex:'#22c55e', bg:'rgba(34,197,94,.1)',   border:'rgba(34,197,94,.25)'},
+  {id:'orange', hex:'#f97316', bg:'rgba(249,115,22,.1)',  border:'rgba(249,115,22,.25)'},
+  {id:'red',    hex:'#ef4444', bg:'rgba(239,68,68,.1)',   border:'rgba(239,68,68,.25)'},
+  {id:'purple', hex:'#a855f7', bg:'rgba(168,85,247,.1)', border:'rgba(168,85,247,.25)'},
+  {id:'pink',   hex:'#ec4899', bg:'rgba(236,72,153,.1)', border:'rgba(236,72,153,.25)'},
+  {id:'cyan',   hex:'#06b6d4', bg:'rgba(6,182,212,.1)',  border:'rgba(6,182,212,.25)'},
+  {id:'yellow', hex:'#eab308', bg:'rgba(234,179,8,.1)',  border:'rgba(234,179,8,.25)'},
+];
 
 function guessCategory(desc) {
   const d = (desc||'').toLowerCase();
@@ -602,12 +645,15 @@ function txRow(t, inGroup) {
 }
 
 function groupBlock(groupId, gtxs) {
-  const g = groups[groupId] || {id:groupId, name:'Group'};
+  const g      = groups[groupId] || {id:groupId, name:'Group'};
+  const c      = GROUP_PALETTE.find(p=>p.id===(g.color||'blue')) || GROUP_PALETTE[0];
+  const cssvars = `--gc:${c.hex};--gc-bg:${c.bg};--gc-border:${c.border};--gc-icon:${c.bg}`;
   const expanded = expandedGroups.has(groupId);
   const expTotal = gtxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   const allExp   = gtxs.length>0 && gtxs.every(t=>t.type==='expense');
   const sorted   = [...gtxs].sort((a,b)=>b.date.localeCompare(a.date));
-  return `<div class="group-block" data-group-id="${groupId}">
+  const labelPill = g.label ? `<span class="group-label-pill">${esc(g.label)}</span>` : '';
+  return `<div class="group-block" data-group-id="${groupId}" style="${cssvars}">
     <div class="group-header"
       onclick="toggleGroup('${groupId}')"
       ondragover="groupDragOver(event)"
@@ -615,12 +661,15 @@ function groupBlock(groupId, gtxs) {
       ondrop="groupDrop(event,'${groupId}')">
       <div class="group-icon">📁</div>
       <div class="group-info">
-        <div class="group-name" ondblclick="renameGroup('${groupId}');event.stopPropagation()">${esc(g.name)}</div>
-        <div class="group-meta">${gtxs.length} item${gtxs.length!==1?'s':''} · double-tap name to rename</div>
+        <div class="group-name-row">
+          <span class="group-name">${esc(g.name)}</span>
+          ${labelPill}
+        </div>
+        <div class="group-meta">${gtxs.length} item${gtxs.length!==1?'s':''} · ${allExp?'−'+fmt(expTotal):gtxs.length+' txs'}</div>
       </div>
-      <div class="group-total neg">${allExp?'−'+fmt(expTotal):gtxs.length+' txs'}</div>
       <div class="group-actions">
-        <button class="btn-group-action" onclick="deleteGroup('${groupId}');event.stopPropagation()" title="Ungroup">↗</button>
+        <button class="btn-group-action edit" onclick="openGroupEdit('${groupId}');event.stopPropagation()" title="Edit group">✏️</button>
+        <button class="btn-group-action del"  onclick="deleteGroup('${groupId}');event.stopPropagation()" title="Ungroup">↗</button>
         <span class="group-chevron">${expanded?'▲':'▼'}</span>
       </div>
     </div>
@@ -1124,10 +1173,37 @@ function toggleGroup(groupId) {
   expandedGroups.has(groupId) ? expandedGroups.delete(groupId) : expandedGroups.add(groupId);
   render();
 }
-function renameGroup(groupId) {
-  const cur = groups[groupId]?.name || 'Group';
-  const name = prompt('Rename group:', cur);
-  if (name && name.trim()) groupsRef.doc(groupId).update({name: name.trim()});
+let editGroupId = null;
+function openGroupEdit(groupId) {
+  editGroupId = groupId;
+  const g = groups[groupId] || {};
+  document.getElementById('ge-name').value  = g.name  || '';
+  document.getElementById('ge-label').value = g.label || '';
+  const sel = g.color || 'blue';
+  document.getElementById('ge-swatches').innerHTML = GROUP_PALETTE.map(p =>
+    `<div class="swatch${p.id===sel?' active':''}" style="background:${p.hex}"
+      onclick="geSelectColor('${p.id}',this)"></div>`
+  ).join('');
+  document.getElementById('group-edit-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('ge-name').focus(),50);
+}
+function geSelectColor(id, el) {
+  document.querySelectorAll('#ge-swatches .swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+}
+function closeGroupEdit() { document.getElementById('group-edit-overlay').classList.remove('open'); editGroupId=null; }
+function geOverlayClick(e) { if(e.target===document.getElementById('group-edit-overlay')) closeGroupEdit(); }
+function saveGroupEdit() {
+  const name  = document.getElementById('ge-name').value.trim();
+  const label = document.getElementById('ge-label').value.trim();
+  const color = document.querySelector('#ge-swatches .swatch.active')?.style.backgroundColor;
+  const colorId = GROUP_PALETTE.find(p=>p.hex===color)?.id || 'blue';
+  if (!name) { alert('Group needs a name.'); return; }
+  const update = {name};
+  if (label) update.label = label; else update.label = '';
+  update.color = colorId;
+  groupsRef.doc(editGroupId).update(update);
+  closeGroupEdit();
 }
 function deleteGroup(groupId) {
   if (!confirm('Ungroup all transactions in this group?')) return;
