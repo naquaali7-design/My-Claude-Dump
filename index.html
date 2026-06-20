@@ -215,7 +215,7 @@
 
   <div class="balance-card">
     <div class="balance-label">Total Balance</div>
-    <div class="balance-amount pos" id="balance-display">$0.00</div>
+    <div class="balance-amount pos" id="balance-display">PKR 0</div>
   </div>
 
   <div class="stats">
@@ -330,7 +330,8 @@
     </div>
     <div class="form-group" id="category-group">
       <label>Category</label>
-      <select id="tx-category"></select>
+      <select id="tx-category" onchange="onCategoryChange(this)"></select>
+      <input type="text" id="tx-category-custom" placeholder="Type category name…" style="display:none;margin-top:.5rem">
     </div>
     <div class="form-group" id="person-group" style="display:none">
       <label>Person's Name</label>
@@ -738,7 +739,17 @@ function openModal(type) {
   document.getElementById('modal-submit').className  = cls[type];
   document.getElementById('category-group').style.display = loan?'none':'';
   document.getElementById('person-group').style.display   = loan?'':'none';
-  if (!loan) document.getElementById('tx-category').innerHTML = CATS[type].map(c=>`<option>${c}</option>`).join('');
+  if (!loan) {
+    const base   = CATS[type];
+    const custom = type==='expense'
+      ? [...new Set(txs.filter(t=>t.type==='expense'&&t.category&&!base.includes(t.category)).map(t=>t.category))]
+      : [];
+    let opts = base.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    if (custom.length) opts += `<optgroup label="─ My Categories ─">${custom.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</optgroup>`;
+    opts += `<option value="__custom__">+ Custom category…</option>`;
+    document.getElementById('tx-category').innerHTML = opts;
+    document.getElementById('tx-category-custom').style.display = 'none';
+  }
   document.getElementById('tx-amount').value='';
   document.getElementById('tx-person').value='';
   document.getElementById('tx-note').value='';
@@ -759,7 +770,14 @@ function save() {
     const person = document.getElementById('tx-person').value.trim();
     if (!person) { alert("Enter the person's name."); return; }
     tx.person = person;
-  } else { tx.category = document.getElementById('tx-category').value; }
+  } else {
+    let cat = document.getElementById('tx-category').value;
+    if (cat === '__custom__') {
+      cat = document.getElementById('tx-category-custom').value.trim();
+      if (!cat) { alert('Enter a category name.'); return; }
+    }
+    tx.category = cat;
+  }
   txsRef.doc(tx.id).set(tx).catch(err => console.error(err));
   closeModal();
 }
@@ -949,7 +967,7 @@ function renderBar(txsA, txsB, pA, pB) {
       plugins: { legend:{ display:!!txsB, labels:{ color:'#94a3b8', font:{size:11} } } },
       scales: {
         x: { ticks:{color:'#94a3b8'}, grid:{color:'rgba(51,65,85,.4)'} },
-        y: { ticks:{color:'#94a3b8', callback:v=>'$'+v.toLocaleString()}, grid:{color:'rgba(51,65,85,.4)'} }
+        y: { ticks:{color:'#94a3b8', callback:v=>'PKR '+Math.round(v).toLocaleString('en')}, grid:{color:'rgba(51,65,85,.4)'} }
       }
     }
   });
@@ -1324,11 +1342,16 @@ function touchDragEnd(e) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function fmt(n) { return '$'+(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function fmt(n) { return 'PKR ' + Math.round(n||0).toLocaleString('en'); }
 function today() { return new Date().toISOString().split('T')[0]; }
-function fmtDate(d) { return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function fmtDate(d) { const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function onCategoryChange(sel) {
+  const inp = document.getElementById('tx-category-custom');
+  if (sel.value==='__custom__') { inp.style.display=''; inp.focus(); }
+  else inp.style.display='none';
+}
 
 </script>
 </body>
